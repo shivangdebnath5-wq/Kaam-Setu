@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KaamSetu — Find Trusted Local Help</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="brand">
+      <div class="brand-mark">K</div>
+      <div>
+        <strong>KaamSetu</strong>
+        <span>Local help, connected.</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+
+      <button class="nav-item active" data-view="discover">
+        <span>⌂</span>
+        <div>
+          <b>Discover</b>
+          <small>Find local help</small>
+        </div>
+      </button>
+
+      <button class="nav-item" data-view="requests">
+        <span>◷</span>
+        <div>
+          <b>My Requests</b>
+          <small>Track your jobs</small>
+        </div>
+        <em id="requestBadge">0</em>
+      </button>
+
+      <button class="nav-item" data-view="saved">
+        <span>♡</span>
+        <div>
+          <b>Saved Workers</b>
+          <small>Your favourites</small>
+        </div>
+      </button>
+
+      <button class="nav-item" data-view="activity">
+        <span>⌁</span>
+        <div>
+          <b>Activity</b>
+          <small>Recent updates</small>
+        </div>
+      </button>
+
+      <button class="nav-item" data-view="jobs">
+        <span>＋</span>
+        <div>
+          <b>Post a Job</b>
+          <small>Let workers find you</small>
+        </div>
+      </button>
+
+      <button class="nav-item" data-view="messages">
+        <span>◌</span>
+        <div>
+          <b>Messages</b>
+          <small>Talk to workers</small>
+        </div>
+      </button>
+
+    </nav>
+
+    <div class="trust-card">
+      <div class="trust-icon">✓</div>
+      <strong>Built for local trust</strong>
+      <p>Discover nearby workers, compare skills and track your requests.</p>
+    </div>
+
+    <div class="profile-mini">
+      <div class="avatar">B</div>
+      <div>
+        <strong>Blade</strong>
+        <span>KaamSetu member</span>
+      </div>
+      <button id="profileSettings">•••</button>
+    </div>
+
+  </aside>
+
+  <!-- MOBILE OVERLAY -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+
+      <button class="mobile-menu" id="mobileMenu">☰</button>
+
+      <div>
+        <h1 id="pageTitle">Discover</h1>
+        <p id="pageSubtitle">Find trusted help around you.</p>
+      </div>
+
+      <div class="top-actions">
+
+        <button class="location-pill" id="locationButton">
+          <span>⌖</span>
+          Ghaziabad
+          <small>Nearby</small>
+        </button>
+
+        <button class="icon-btn" id="languageButton">EN</button>
+
+      </div>
+
+    </header>
+
+    <!-- ================= DISCOVER ================= -->
+    <section class="view active" id="discoverView">
+
+      <section class="hero">
+
+        <div class="hero-content">
+
+          <div class="eyebrow">
+            <span></span>
+            LOCAL HELP, SIMPLIFIED
+          </div>
+
+          <h2>Tell us what you need.<br><strong>KaamSetu finds the match.</strong></h2>
+
+          <p>
+            Describe your problem naturally and discover nearby workers
+            with the right skills.
+          </p>
+
+          <div class="search-box">
+
+            <span class="search-icon">⌕</span>
+
+            <input
+              id="searchInput"
+              type="text"
+              placeholder="e.g. My Wi-Fi keeps disconnecting..."
+              autocomplete="off"
+            >
+
+            <button id="clearSearch">×</button>
+
+            <button class="search-submit" id="searchButton">
+              Find help
+            </button>
+
+          </div>
+
+          <div class="quick-searches">
+            <span>Try:</span>
+            <button data-search="fix wifi router">Wi-Fi repair</button>
+            <button data-search="fan not working">Fan repair</button>
+            <button data-search="need clothes stitching">Tailoring</button>
+            <button data-search="cctv installation">CCTV</button>
+          </div>
+
+        </div>
+
+        <div class="hero-orb">
+          <div class="orb-ring ring-one"></div>
+          <div class="orb-ring ring-two"></div>
+          <div class="orb-core">K</div>
+          <span class="orb-pin pin-one">●</span>
+          <span class="orb-pin pin-two">●</span>
+          <span class="orb-pin pin-three">●</span>
+        </div>
+
+      </section>
+
+      <!-- SMART MATCH -->
+      <section class="smart-match hidden" id="smartMatch">
+
+        <div class="smart-icon">✦</div>
+
+        <div>
+          <span class="section-kicker">SMART MATCH</span>
+          <h3 id="smartTitle">We found relevant local help</h3>
+          <p id="smartDescription"></p>
+        </div>
+
+        <div class="match-summary">
+          <strong id="matchCount">0</strong>
+          <span>matches</span>
+        </div>
+
+      </section>
+
+      <!-- MAP -->
+      <section class="map-section">
+
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">NEARBY</span>
+            <h3>Workers around you</h3>
+          </div>
+
+          <button class="text-btn" id="centerMap">⌖ Center map</button>
+        </div>
+
+        <div class="map-card">
+
+          <div class="fake-map">
+
+            <div class="map-road road-one"></div>
+            <div class="map-road road-two"></div>
+            <div class="map-road road-three"></div>
+            <div class="map-road road-four"></div>
+
+            <div class="map-area area-one">Raj Nagar</div>
+            <div class="map-area area-two">Indirapuram</div>
+            <div class="map-area area-three">Vaishali</div>
+
+            <button class="map-pin red" style="left: 38%; top: 38%;" data-worker="rohit">
+              <span>RK</span>
+            </button>
+
+            <button class="map-pin yellow" style="left: 67%; top: 30%;" data-worker="priya">
+              <span>PS</span>
+            </button>
+
+            <button class="map-pin blue" style="left: 57%; top: 69%;" data-worker="amit">
+              <span>AM</span>
+            </button>
+
+            <div class="user-location">
+              <span></span>
+            </div>
+
+            <div class="map-controls">
+              <button id="zoomIn">+</button>
+              <button id="zoomOut">−</button>
+            </div>
+
+            <div class="map-label">
+              <span class="live-dot"></span>
+              Live nearby demo
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- FILTERS -->
+      <section class="workers-section">
+
+        <div class="section-heading workers-heading">
+
+          <div>
+            <span class="section-kicker">DISCOVER</span>
+            <h3 id="workerHeading">Recommended workers</h3>
+          </div>
+
+          <button class="filter-button" id="filterButton">
+            ☷ Filters
+          </button>
+
+        </div>
+
+        <div class="filters-panel hidden" id="filtersPanel">
+
+          <div class="filter-group">
+            <label>Category</label>
+
+            <select id="categoryFilter">
+              <option value="all">All categories</option>
+              <option value="home">Home repair</option>
+              <option value="tech">Technology</option>
+              <option value="personal">Personal services</option>
+              <option value="transport">Transport</option>
+              <option value="education">Education</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>Sort by</label>
+
+            <select id="sortFilter">
+              <option value="recommended">Recommended</option>
+              <option value="rating">Highest rating</option>
+              <option value="price">Lowest starting price</option>
+              <option value="distance">Nearest</option>
+              <option value="jobs">Most jobs</option>
+            </select>
+          </div>
+
+          <div class="filter-group checkbox-filter">
+            <label>
+              <input type="checkbox" id="verifiedFilter">
+              Verified only
+            </label>
+          </div>
+
+          <div class="filter-group checkbox-filter">
+            <label>
+              <input type="checkbox" id="availableFilter">
+              Available now
+            </label>
+          </div>
+
+        </div>
+
+        <div class="category-tabs">
+
+          <button class="category active" data-category="all">All</button>
+          <button class="category" data-category="home">Home</button>
+          <button class="category" data-category="tech">Tech</button>
+          <button class="category" data-category="personal">Personal</button>
+          <button class="category" data-category="transport">Transport</button>
+          <button class="category" data-category="education">Education</button>
+
+        </div>
+
+        <div class="worker-grid" id="workerGrid"></div>
+
+        <div class="empty-state hidden" id="emptyWorkers">
+          <div>⌕</div>
+          <h3>No matching workers</h3>
+          <p>Try a different problem, category or filter.</p>
+          <button class="primary-btn" id="resetFilters">Reset filters</button>
+        </div>
+
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section class="how-section">
+
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">HOW IT WORKS</span>
+            <h3>From problem to solution</h3>
+          </div>
+        </div>
+
+        <div class="steps">
+
+          <div class="step">
+            <span>01</span>
+            <div>
+              <strong>Describe</strong>
+              <p>Tell KaamSetu what you need in your own words.</p>
+            </div>
+          </div>
+
+          <div class="step">
+            <span>02</span>
+            <div>
+              <strong>Match</strong>
+              <p>Find workers based on skills, distance and availability.</p>
+            </div>
+          </div>
+
+          <div class="step">
+            <span>03</span>
+            <div>
+              <strong>Connect</strong>
+              <p>Send a request, chat and track the job.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </section>
+
+
+    <!-- ================= REQUESTS ================= -->
+    <section class="view" id="requestsView">
+
+      <div class="page-card">
+
+        <div class="page-card-header">
+          <div>
+            <span class="section-kicker">YOUR WORK</span>
+            <h2>My Requests</h2>
+            <p>Track every request from start to finish.</p>
+          </div>
+          <button class="primary-btn" id="newRequestButton">＋ New request</button>
+        </div>
+
+        <div id="requestsList" class="request-list"></div>
+
+        <div class="empty-large hidden" id="emptyRequests">
+          <div class="empty-icon">◷</div>
+          <h3>No requests yet</h3>
+          <p>When you request a worker, your jobs will appear here.</p>
+          <button class="primary-btn" id="discoverFromRequests">Find a worker</button>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= SAVED ================= -->
+    <section class="view" id="savedView">
+
+      <div class="page-card">
+
+        <div class="page-card-header">
+          <div>
+            <span class="section-kicker">YOUR PEOPLE</span>
+            <h2>Saved Workers</h2>
+            <p>Keep trusted workers close for later.</p>
+          </div>
+        </div>
+
+        <div class="worker-grid" id="savedGrid"></div>
+
+        <div class="empty-large hidden" id="emptySaved">
+          <div class="empty-icon">♡</div>
+          <h3>No saved workers</h3>
+          <p>Tap the heart on a worker profile to save them.</p>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= ACTIVITY ================= -->
+    <section class="view" id="activityView">
+
+      <div class="page-card">
+
+        <div class="page-card-header">
+          <div>
+            <span class="section-kicker">TIMELINE</span>
+            <h2>Activity</h2>
+            <p>Your recent KaamSetu activity.</p>
+          </div>
+        </div>
+
+        <div class="timeline" id="activityList"></div>
+
+        <div class="empty-large hidden" id="emptyActivity">
+          <div class="empty-icon">⌁</div>
+          <h3>No activity yet</h3>
+          <p>Your requests, saves and updates will appear here.</p>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= JOBS ================= -->
+    <section class="view" id="jobsView">
+
+      <div class="page-card">
+
+        <div class="page-card-header">
+
+          <div>
+            <span class="section-kicker">POST A JOB</span>
+            <h2>Let workers find you.</h2>
+            <p>Describe the work and receive relevant local matches.</p>
+          </div>
+
+          <button class="primary-btn" id="postJobButton">＋ Post a job</button>
+
+        </div>
+
+        <div class="job-explainer">
+
+          <div>
+            <span>01</span>
+            <strong>Describe the work</strong>
+            <p>Tell workers what needs to be done.</p>
+          </div>
+
+          <div>
+            <span>02</span>
+            <strong>Add your area</strong>
+            <p>Use an approximate location for the prototype.</p>
+          </div>
+
+          <div>
+            <span>03</span>
+            <strong>Compare responses</strong>
+            <p>Review workers and choose who to contact.</p>
+          </div>
+
+        </div>
+
+        <div class="posted-jobs" id="postedJobs"></div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================= MESSAGES ================= -->
+    <section class="view" id="messagesView">
+
+      <div class="messages-layout">
+
+        <div class="conversation-list">
+
+          <div class="conversation-header">
+            <h3>Messages</h3>
+            <button id="newChatButton">＋</button>
+          </div>
+
+          <div id="conversationList"></div>
+
+        </div>
+
+        <div class="chat-panel" id="chatPanel">
+
+          <div class="chat-empty">
+            <div>◌</div>
+            <h3>Your conversations</h3>
+            <p>Select a worker to start chatting.</p>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- FOOTER -->
+    <footer class="nexora-footer">
+
+      <div class="nexora-branding">
+
+        <a id="nexoraLogoLink" target="_blank" rel="noopener">
+          <img
+            id="nexoraLogo"
+            alt="Nexora Corporation"
+            class="nexora-logo"
+          >
+        </a>
+
+        <div class="nexora-heading">
+          <h2>NEXORA</h2>
+          <span>
+            CONNECT <b>•</b> CREATE <b>•</b> EXPERIENCE
+          </span>
+        </div>
+
+      </div>
+
+      <div class="nexora-divider"></div>
+
+      <p class="copyright">
+        © <span id="copyrightYear"></span> Nexora Corporation
+      </p>
+
+    </footer>
+
+  </main>
+
+</div>
+
+
+<!-- ================= PROFILE MODAL ================= -->
+
+<div class="modal-backdrop hidden" id="profileModal">
+
+  <div class="modal profile-modal">
+
+    <button class="modal-close" data-close="profileModal">×</button>
+
+    <div id="profileContent"></div>
+
+  </div>
+
+</div>
+
+
+<!-- ================= REQUEST MODAL ================= -->
+
+<div class="modal-backdrop hidden" id="requestModal">
+
+  <div class="modal">
+
+    <button class="modal-close" data-close="requestModal">×</button>
+
+    <div class="modal-kicker">REQUEST HELP</div>
+
+    <h2 id="requestWorkerName">Request a worker</h2>
+
+    <p class="modal-subtitle">
+      Describe the problem so they know what to expect.
+    </p>
+
+    <form id="requestForm">
+
+      <input type="hidden" id="requestWorkerId">
+
+      <label>
+        What do you need?
+        <textarea
+          id="requestDescription"
+          placeholder="Example: My router keeps disconnecting every few minutes..."
+          required
+        ></textarea>
+      </label>
+
+      <label>
+        Preferred time
+        <select id="requestTime">
+          <option>As soon as possible</option>
+          <option>Today evening</option>
+          <option>Tomorrow morning</option>
+          <option>Tomorrow evening</option>
+          <option>I'll decide later</option>
+        </select>
+      </label>
+
+      <label>
+        Add a photo <span>(optional)</span>
+        <input type="file" id="requestPhoto" accept="image/*">
+      </label>
+
+      <div class="emergency-toggle">
+        <label>
+          <input type="checkbox" id="emergencyRequest">
+          <span>
+            <strong>Emergency request</strong>
+            <small>Prioritize this issue for urgent help.</small>
+          </span>
+        </label>
+      </div>
+
+      <button class="primary-btn full" type="submit">
+        Send request
+      </button>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- ================= POST JOB MODAL ================= -->
+
+<div class="modal-backdrop hidden" id="jobModal">
+
+  <div class="modal">
+
+    <button class="modal-close" data-close="jobModal">×</button>
+
+    <div class="modal-kicker">POST A JOB</div>
+
+    <h2>What do you need done?</h2>
+
+    <p class="modal-subtitle">
+      Workers with matching skills can discover your request.
+    </p>
+
+    <form id="jobForm">
+
+      <label>
+        Job title
+        <input
+          id="jobTitle"
+          type="text"
+          placeholder="e.g. Install a CCTV camera"
+          required
+        >
+      </label>
+
+      <label>
+        Description
+        <textarea
+          id="jobDescription"
+          placeholder="Explain what needs to be done..."
+          required
+        ></textarea>
+      </label>
+
+      <div class="form-row">
+
+        <label>
+          Category
+          <select id="jobCategory">
+            <option value="home">Home repair</option>
+            <option value="tech">Technology</option>
+            <option value="personal">Personal service</option>
+            <option value="transport">Transport</option>
+            <option value="education">Education</option>
+          </select>
+        </label>
+
+        <label>
+          Budget
+          <input
+            id="jobBudget"
+            type="text"
+            placeholder="₹500"
+          >
+        </label>
+
+      </div>
+
+      <label>
+        Area
+        <input
+          id="jobArea"
+          type="text"
+          value="Ghaziabad"
+          placeholder="Your area"
+        >
+      </label>
+
+      <button class="primary-btn full" type="submit">
+        Post job
+      </button>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- ================= PAYMENT MODAL ================= -->
+
+<div class="modal-backdrop hidden" id="paymentModal">
+
+  <div class="modal payment-modal">
+
+    <button class="modal-close" data-close="paymentModal">×</button>
+
+    <div class="payment-icon">₹</div>
+
+    <div class="modal-kicker">PROTOTYPE PAYMENT</div>
+
+    <h2>Complete payment</h2>
+
+    <p class="modal-subtitle">
+      This is a demo UPI flow. No real payment will be processed.
+    </p>
+
+    <div class="payment-amount" id="paymentAmount">₹250</div>
+
+    <div class="upi-options">
+
+      <button data-upi="Google Pay">Google Pay</button>
+      <button data-upi="PhonePe">PhonePe</button>
+      <button data-upi="Paytm">Paytm</button>
+
+    </div>
+
+    <button class="primary-btn full" id="simulatePayment">
+      Simulate payment
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- ================= LANGUAGE MODAL ================= -->
+
+<div class="modal-backdrop hidden" id="languageModal">
+
+  <div class="modal small-modal">
+
+    <button class="modal-close" data-close="languageModal">×</button>
+
+    <div class="modal-kicker">LANGUAGE</div>
+
+    <h2>Choose language</h2>
+
+    <div class="language-options">
+
+      <button data-lang="EN">🇬🇧 English</button>
+      <button data-lang="HI">🇮🇳 हिन्दी</button>
+      <button data-lang="BN">বাংলা</button>
+      <button data-lang="TA">தமிழ்</button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
