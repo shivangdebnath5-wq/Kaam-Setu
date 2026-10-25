@@ -1,9 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080b10" id="themeColorMeta">
   <title>KaamSetu — Find Trusted Local Help</title>
+
+  <!-- Apply saved theme before first paint (no flash) -->
+  <script>
+    try {
+      var saved = JSON.parse(localStorage.getItem("ks_theme"));
+      var theme = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {}
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,6 +23,43 @@
 </head>
 
 <body>
+
+<!-- ICON SPRITE -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M22 3H2l8 9.5V19l4 2v-8.5z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3L7 14.2 2 9.3l6.9-1z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-compare" viewBox="0 0 24 24"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></symbol>
+</svg>
+
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="toasts" id="toasts" aria-live="polite"></div>
 
 <div class="app">
 
@@ -30,98 +77,94 @@
     <nav class="nav">
 
       <button class="nav-item active" data-view="discover">
-        <span>⌂</span>
-        <div>
-          <b>Discover</b>
-          <small>Find local help</small>
-        </div>
+        <svg class="i"><use href="#i-home"/></svg>
+        <div><b data-i18n="nav_discover">Discover</b><small data-i18n="nav_discover_s">Find local help</small></div>
       </button>
 
       <button class="nav-item" data-view="requests">
-        <span>◷</span>
-        <div>
-          <b>My Requests</b>
-          <small>Track your jobs</small>
-        </div>
+        <svg class="i"><use href="#i-clock"/></svg>
+        <div><b data-i18n="nav_requests">My Requests</b><small data-i18n="nav_requests_s">Track your jobs</small></div>
         <em id="requestBadge">0</em>
       </button>
 
       <button class="nav-item" data-view="saved">
-        <span>♡</span>
-        <div>
-          <b>Saved Workers</b>
-          <small>Your favourites</small>
-        </div>
+        <svg class="i"><use href="#i-heart"/></svg>
+        <div><b data-i18n="nav_saved">Saved Workers</b><small data-i18n="nav_saved_s">Your favourites</small></div>
+        <em id="savedBadge" class="hidden">0</em>
       </button>
 
       <button class="nav-item" data-view="activity">
-        <span>⌁</span>
-        <div>
-          <b>Activity</b>
-          <small>Recent updates</small>
-        </div>
+        <svg class="i"><use href="#i-activity"/></svg>
+        <div><b data-i18n="nav_activity">Activity</b><small data-i18n="nav_activity_s">Recent updates</small></div>
       </button>
 
       <button class="nav-item" data-view="jobs">
-        <span>＋</span>
-        <div>
-          <b>Post a Job</b>
-          <small>Let workers find you</small>
-        </div>
+        <svg class="i"><use href="#i-plus"/></svg>
+        <div><b data-i18n="nav_jobs">Post a Job</b><small data-i18n="nav_jobs_s">Let workers find you</small></div>
       </button>
 
       <button class="nav-item" data-view="messages">
-        <span>◌</span>
-        <div>
-          <b>Messages</b>
-          <small>Talk to workers</small>
-        </div>
+        <svg class="i"><use href="#i-chat"/></svg>
+        <div><b data-i18n="nav_messages">Messages</b><small data-i18n="nav_messages_s">Talk to workers</small></div>
       </button>
 
     </nav>
 
     <div class="trust-card">
-      <div class="trust-icon">✓</div>
-      <strong>Built for local trust</strong>
-      <p>Discover nearby workers, compare skills and track your requests.</p>
+      <div class="trust-icon"><svg class="i"><use href="#i-shield"/></svg></div>
+      <strong data-i18n="trust_t">Built for local trust</strong>
+      <p data-i18n="trust_p">Discover nearby workers, compare skills and track your requests.</p>
     </div>
 
     <div class="profile-mini">
-      <div class="avatar">B</div>
+      <div class="avatar" id="profileAvatar">B</div>
       <div>
-        <strong>Blade</strong>
+        <strong id="profileName">Blade</strong>
         <span>KaamSetu member</span>
       </div>
-      <button id="profileSettings">•••</button>
+      <button id="profileSettings" aria-label="Profile settings"><svg class="i"><use href="#i-user"/></svg></button>
     </div>
 
   </aside>
 
-  <!-- MOBILE OVERLAY -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <!-- MAIN -->
-  <main class="main">
+  <main class="main" id="main">
 
-    <!-- TOPBAR -->
     <header class="topbar">
 
-      <button class="mobile-menu" id="mobileMenu">☰</button>
+      <button class="mobile-menu" id="mobileMenu" aria-label="Open menu" aria-expanded="false">
+        <svg class="i"><use href="#i-menu"/></svg>
+      </button>
 
-      <div>
+      <div class="topbar-title">
         <h1 id="pageTitle">Discover</h1>
         <p id="pageSubtitle">Find trusted help around you.</p>
       </div>
 
       <div class="top-actions">
 
-        <button class="location-pill" id="locationButton">
-          <span>⌖</span>
-          Ghaziabad
-          <small>Nearby</small>
+        <button class="location-pill" id="locationButton" aria-label="Change location">
+          <svg class="i"><use href="#i-pin"/></svg>
+          <span id="locationLabel">Ghaziabad</span>
+          <small data-i18n="nearby">Nearby</small>
         </button>
 
-        <button class="icon-btn" id="languageButton">EN</button>
+        <button class="icon-btn" id="themeToggle" aria-label="Switch between light and dark mode" title="Switch theme">
+          <svg class="i sun-icon"><use href="#i-sun"/></svg>
+          <svg class="i moon-icon"><use href="#i-moon"/></svg>
+        </button>
+
+        <div class="notif-wrap" id="notifWrap">
+          <button class="icon-btn" id="notifButton" aria-label="Notifications">
+            <svg class="i"><use href="#i-bell"/></svg>
+            <span class="notif-dot hidden" id="notifDot"></span>
+          </button>
+          <div class="popover hidden" id="notifPanel"></div>
+        </div>
+
+        <button class="icon-btn" id="languageButton" aria-label="Change language">EN</button>
 
       </div>
 
@@ -134,48 +177,44 @@
 
         <div class="hero-content">
 
-          <div class="eyebrow">
-            <span></span>
-            LOCAL HELP, SIMPLIFIED
-          </div>
+          <div class="eyebrow"><span></span><i data-i18n="eyebrow">LOCAL HELP, SIMPLIFIED</i></div>
 
-          <h2>Tell us what you need.<br><strong>KaamSetu finds the match.</strong></h2>
+          <h2>
+            <span data-i18n="heroA">Tell us what you need.</span><br>
+            <strong data-i18n="heroB">KaamSetu finds the match.</strong>
+          </h2>
 
-          <p>
-            Describe your problem naturally and discover nearby workers
-            with the right skills.
+          <p data-i18n="heroP">
+            Describe your problem naturally and discover nearby workers with the right skills.
           </p>
 
-          <div class="search-box">
-
-            <span class="search-icon">⌕</span>
-
-            <input
-              id="searchInput"
-              type="text"
-              placeholder="e.g. My Wi-Fi keeps disconnecting..."
-              autocomplete="off"
-            >
-
-            <button id="clearSearch">×</button>
-
-            <button class="search-submit" id="searchButton">
-              Find help
-            </button>
-
+          <div class="search-wrap">
+            <div class="search-box">
+              <svg class="i search-icon"><use href="#i-search"/></svg>
+              <input id="searchInput" type="text" data-i18n-ph="search_ph"
+                placeholder="e.g. My Wi-Fi keeps disconnecting..." autocomplete="off"
+                aria-label="Describe your problem" role="combobox" aria-expanded="false" aria-controls="suggestions">
+              <button class="ghost-btn" id="clearSearch" hidden aria-label="Clear search"><svg class="i"><use href="#i-x"/></svg></button>
+              <button class="ghost-btn" id="voiceButton" aria-label="Search by voice" title="Search by voice"><svg class="i"><use href="#i-mic"/></svg></button>
+              <button class="search-submit" id="searchButton" data-i18n="find">Find help</button>
+            </div>
+            <div class="suggestions hidden" id="suggestions" role="listbox"></div>
           </div>
 
           <div class="quick-searches">
             <span>Try:</span>
             <button data-search="fix wifi router">Wi-Fi repair</button>
             <button data-search="fan not working">Fan repair</button>
+            <button data-search="AC not cooling">AC service</button>
             <button data-search="need clothes stitching">Tailoring</button>
             <button data-search="cctv installation">CCTV</button>
           </div>
 
+          <div class="recent-searches hidden" id="recentSearches"></div>
+
         </div>
 
-        <div class="hero-orb">
+        <div class="hero-orb" aria-hidden="true">
           <div class="orb-ring ring-one"></div>
           <div class="orb-ring ring-two"></div>
           <div class="orb-core">K</div>
@@ -186,115 +225,113 @@
 
       </section>
 
+      <!-- STATS -->
+      <section class="stats-strip reveal" id="statsStrip">
+        <div class="stat-tile"><strong id="statWorkers">0</strong><span>Workers nearby</span></div>
+        <div class="stat-tile"><strong id="statAvailable">0</strong><span>Available now</span></div>
+        <div class="stat-tile"><strong id="statRating">0</strong><span>Average rating</span></div>
+        <div class="stat-tile"><strong id="statResponse">0</strong><span>Avg. response (min)</span></div>
+      </section>
+
+      <!-- POPULAR SERVICES -->
+      <section class="services-section reveal">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">BROWSE</span>
+            <h3 data-i18n="popular">Popular services</h3>
+          </div>
+        </div>
+        <div class="service-tiles" id="serviceTiles"></div>
+      </section>
+
       <!-- SMART MATCH -->
       <section class="smart-match hidden" id="smartMatch">
-
-        <div class="smart-icon">✦</div>
-
+        <div class="smart-icon"><svg class="i"><use href="#i-sparkle"/></svg></div>
         <div>
           <span class="section-kicker">SMART MATCH</span>
           <h3 id="smartTitle">We found relevant local help</h3>
           <p id="smartDescription"></p>
         </div>
-
         <div class="match-summary">
           <strong id="matchCount">0</strong>
           <span>matches</span>
         </div>
-
       </section>
 
       <!-- MAP -->
-      <section class="map-section">
+      <section class="map-section reveal">
 
         <div class="section-heading">
           <div>
             <span class="section-kicker">NEARBY</span>
-            <h3>Workers around you</h3>
+            <h3 data-i18n="workers_near">Workers around you</h3>
           </div>
-
-          <button class="text-btn" id="centerMap">⌖ Center map</button>
+          <button class="text-btn" id="centerMap"><svg class="i"><use href="#i-target"/></svg> Center map</button>
         </div>
 
         <div class="map-card">
+          <div class="map-viewport" id="mapViewport">
 
-          <div class="fake-map">
+            <div class="map-stage" id="mapStage">
+              <div class="map-road road-one"></div>
+              <div class="map-road road-two"></div>
+              <div class="map-road road-three"></div>
+              <div class="map-road road-four"></div>
 
-            <div class="map-road road-one"></div>
-            <div class="map-road road-two"></div>
-            <div class="map-road road-three"></div>
-            <div class="map-road road-four"></div>
+              <div class="map-area area-one" id="areaOne">Raj Nagar</div>
+              <div class="map-area area-two" id="areaTwo">Indirapuram</div>
+              <div class="map-area area-three" id="areaThree">Vaishali</div>
 
-            <div class="map-area area-one">Raj Nagar</div>
-            <div class="map-area area-two">Indirapuram</div>
-            <div class="map-area area-three">Vaishali</div>
+              <div id="mapPins"></div>
 
-            <button class="map-pin red" style="left: 38%; top: 38%;" data-worker="rohit">
-              <span>RK</span>
-            </button>
-
-            <button class="map-pin yellow" style="left: 67%; top: 30%;" data-worker="priya">
-              <span>PS</span>
-            </button>
-
-            <button class="map-pin blue" style="left: 57%; top: 69%;" data-worker="amit">
-              <span>AM</span>
-            </button>
-
-            <div class="user-location">
-              <span></span>
+              <div class="user-location" title="You are here"><span></span></div>
             </div>
 
             <div class="map-controls">
-              <button id="zoomIn">+</button>
-              <button id="zoomOut">−</button>
+              <button id="zoomIn" aria-label="Zoom in">+</button>
+              <button id="zoomOut" aria-label="Zoom out">−</button>
             </div>
 
-            <div class="map-label">
-              <span class="live-dot"></span>
-              Live nearby demo
-            </div>
+            <div class="map-label"><span class="live-dot"></span> Live nearby demo · drag to pan</div>
+
+            <div class="map-popup hidden" id="mapPopup"></div>
 
           </div>
-
         </div>
 
       </section>
 
-      <!-- FILTERS -->
-      <section class="workers-section">
+      <!-- WORKERS -->
+      <section class="workers-section reveal" id="workersSection">
 
         <div class="section-heading workers-heading">
-
           <div>
             <span class="section-kicker">DISCOVER</span>
-            <h3 id="workerHeading">Recommended workers</h3>
+            <h3 id="workerHeading" data-i18n="recommended">Recommended workers</h3>
           </div>
-
-          <button class="filter-button" id="filterButton">
-            ☷ Filters
+          <button class="filter-button" id="filterButton" aria-expanded="false">
+            <svg class="i"><use href="#i-filter"/></svg> Filters
+            <span class="filter-count hidden" id="filterCount">0</span>
           </button>
-
         </div>
 
         <div class="filters-panel hidden" id="filtersPanel">
 
           <div class="filter-group">
-            <label>Category</label>
-
+            <label for="categoryFilter">Category</label>
             <select id="categoryFilter">
               <option value="all">All categories</option>
               <option value="home">Home repair</option>
               <option value="tech">Technology</option>
               <option value="personal">Personal services</option>
+              <option value="cleaning">Cleaning</option>
               <option value="transport">Transport</option>
               <option value="education">Education</option>
             </select>
           </div>
 
           <div class="filter-group">
-            <label>Sort by</label>
-
+            <label for="sortFilter">Sort by</label>
             <select id="sortFilter">
               <option value="recommended">Recommended</option>
               <option value="rating">Highest rating</option>
@@ -304,46 +341,61 @@
             </select>
           </div>
 
-          <div class="filter-group checkbox-filter">
-            <label>
-              <input type="checkbox" id="verifiedFilter">
-              Verified only
-            </label>
+          <div class="filter-group">
+            <label for="ratingFilter">Minimum rating</label>
+            <select id="ratingFilter">
+              <option value="0">Any</option>
+              <option value="4.5">4.5 &amp; up</option>
+              <option value="4.7">4.7 &amp; up</option>
+              <option value="4.8">4.8 &amp; up</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="priceFilter">Max starting price: <b id="priceValue">any</b></label>
+            <input type="range" id="priceFilter" min="100" max="1000" step="50" value="1000">
           </div>
 
           <div class="filter-group checkbox-filter">
-            <label>
-              <input type="checkbox" id="availableFilter">
-              Available now
-            </label>
+            <label><input type="checkbox" id="verifiedFilter"> Verified only</label>
+          </div>
+
+          <div class="filter-group checkbox-filter">
+            <label><input type="checkbox" id="availableFilter"> Available now</label>
+          </div>
+
+          <div class="filter-group checkbox-filter">
+            <button class="text-btn" id="resetFiltersPanel">Reset all</button>
           </div>
 
         </div>
 
-        <div class="category-tabs">
-
+        <div class="category-tabs" id="categoryTabs">
           <button class="category active" data-category="all">All</button>
           <button class="category" data-category="home">Home</button>
           <button class="category" data-category="tech">Tech</button>
           <button class="category" data-category="personal">Personal</button>
+          <button class="category" data-category="cleaning">Cleaning</button>
           <button class="category" data-category="transport">Transport</button>
           <button class="category" data-category="education">Education</button>
-
         </div>
 
         <div class="worker-grid" id="workerGrid"></div>
 
         <div class="empty-state hidden" id="emptyWorkers">
-          <div>⌕</div>
+          <div><svg class="i"><use href="#i-search"/></svg></div>
           <h3>No matching workers</h3>
-          <p>Try a different problem, category or filter.</p>
-          <button class="primary-btn" id="resetFilters">Reset filters</button>
+          <p>Try a different problem, category or filter — or post it as a job.</p>
+          <div class="empty-actions">
+            <button class="primary-btn" id="resetFilters">Reset filters</button>
+            <button class="secondary-btn" id="postFromSearch">Post as a job</button>
+          </div>
         </div>
 
       </section>
 
       <!-- HOW IT WORKS -->
-      <section class="how-section">
+      <section class="how-section reveal">
 
         <div class="section-heading">
           <div>
@@ -353,31 +405,9 @@
         </div>
 
         <div class="steps">
-
-          <div class="step">
-            <span>01</span>
-            <div>
-              <strong>Describe</strong>
-              <p>Tell KaamSetu what you need in your own words.</p>
-            </div>
-          </div>
-
-          <div class="step">
-            <span>02</span>
-            <div>
-              <strong>Match</strong>
-              <p>Find workers based on skills, distance and availability.</p>
-            </div>
-          </div>
-
-          <div class="step">
-            <span>03</span>
-            <div>
-              <strong>Connect</strong>
-              <p>Send a request, chat and track the job.</p>
-            </div>
-          </div>
-
+          <div class="step"><span>01</span><div><strong>Describe</strong><p>Tell KaamSetu what you need in your own words.</p></div></div>
+          <div class="step"><span>02</span><div><strong>Match</strong><p>Find workers based on skills, distance and availability.</p></div></div>
+          <div class="step"><span>03</span><div><strong>Connect</strong><p>Send a request, chat and track the job.</p></div></div>
         </div>
 
       </section>
@@ -387,7 +417,6 @@
 
     <!-- ================= REQUESTS ================= -->
     <section class="view" id="requestsView">
-
       <div class="page-card">
 
         <div class="page-card-header">
@@ -396,26 +425,30 @@
             <h2>My Requests</h2>
             <p>Track every request from start to finish.</p>
           </div>
-          <button class="primary-btn" id="newRequestButton">＋ New request</button>
+          <button class="primary-btn" id="newRequestButton"><svg class="i"><use href="#i-plus"/></svg> New request</button>
+        </div>
+
+        <div class="tabs" id="requestTabs">
+          <button class="tab active" data-rfilter="all">All <em id="tabAll">0</em></button>
+          <button class="tab" data-rfilter="active">Active <em id="tabActive">0</em></button>
+          <button class="tab" data-rfilter="done">Finished <em id="tabDone">0</em></button>
         </div>
 
         <div id="requestsList" class="request-list"></div>
 
         <div class="empty-large hidden" id="emptyRequests">
-          <div class="empty-icon">◷</div>
-          <h3>No requests yet</h3>
+          <div class="empty-icon"><svg class="i"><use href="#i-clock"/></svg></div>
+          <h3>No requests here</h3>
           <p>When you request a worker, your jobs will appear here.</p>
           <button class="primary-btn" id="discoverFromRequests">Find a worker</button>
         </div>
 
       </div>
-
     </section>
 
 
     <!-- ================= SAVED ================= -->
     <section class="view" id="savedView">
-
       <div class="page-card">
 
         <div class="page-card-header">
@@ -429,19 +462,17 @@
         <div class="worker-grid" id="savedGrid"></div>
 
         <div class="empty-large hidden" id="emptySaved">
-          <div class="empty-icon">♡</div>
+          <div class="empty-icon"><svg class="i"><use href="#i-heart"/></svg></div>
           <h3>No saved workers</h3>
           <p>Tap the heart on a worker profile to save them.</p>
         </div>
 
       </div>
-
     </section>
 
 
     <!-- ================= ACTIVITY ================= -->
     <section class="view" id="activityView">
-
       <div class="page-card">
 
         <div class="page-card-header">
@@ -450,95 +481,67 @@
             <h2>Activity</h2>
             <p>Your recent KaamSetu activity.</p>
           </div>
+          <button class="secondary-btn" id="clearActivity">Clear</button>
         </div>
 
         <div class="timeline" id="activityList"></div>
 
         <div class="empty-large hidden" id="emptyActivity">
-          <div class="empty-icon">⌁</div>
+          <div class="empty-icon"><svg class="i"><use href="#i-activity"/></svg></div>
           <h3>No activity yet</h3>
           <p>Your requests, saves and updates will appear here.</p>
         </div>
 
       </div>
-
     </section>
 
 
     <!-- ================= JOBS ================= -->
     <section class="view" id="jobsView">
-
       <div class="page-card">
 
         <div class="page-card-header">
-
           <div>
             <span class="section-kicker">POST A JOB</span>
             <h2>Let workers find you.</h2>
             <p>Describe the work and receive relevant local matches.</p>
           </div>
-
-          <button class="primary-btn" id="postJobButton">＋ Post a job</button>
-
+          <button class="primary-btn" id="postJobButton"><svg class="i"><use href="#i-plus"/></svg> Post a job</button>
         </div>
 
         <div class="job-explainer">
-
-          <div>
-            <span>01</span>
-            <strong>Describe the work</strong>
-            <p>Tell workers what needs to be done.</p>
-          </div>
-
-          <div>
-            <span>02</span>
-            <strong>Add your area</strong>
-            <p>Use an approximate location for the prototype.</p>
-          </div>
-
-          <div>
-            <span>03</span>
-            <strong>Compare responses</strong>
-            <p>Review workers and choose who to contact.</p>
-          </div>
-
+          <div><span>01</span><strong>Describe the work</strong><p>Tell workers what needs to be done.</p></div>
+          <div><span>02</span><strong>Add your area</strong><p>Use an approximate location for the prototype.</p></div>
+          <div><span>03</span><strong>Compare responses</strong><p>Review workers and choose who to contact.</p></div>
         </div>
 
         <div class="posted-jobs" id="postedJobs"></div>
 
       </div>
-
     </section>
 
 
     <!-- ================= MESSAGES ================= -->
     <section class="view" id="messagesView">
-
-      <div class="messages-layout">
+      <div class="messages-layout" id="messagesLayout">
 
         <div class="conversation-list">
-
           <div class="conversation-header">
             <h3>Messages</h3>
-            <button id="newChatButton">＋</button>
           </div>
-
+          <div class="conv-search"><input id="convSearch" type="search" placeholder="Search workers…" aria-label="Search conversations"></div>
           <div id="conversationList"></div>
-
         </div>
 
         <div class="chat-panel" id="chatPanel">
-
           <div class="chat-empty">
-            <div>◌</div>
+            <div><svg class="i"><use href="#i-chat"/></svg></div>
             <h3>Your conversations</h3>
             <p>Select a worker to start chatting.</p>
           </div>
-
         </div>
 
       </div>
-
     </section>
 
 
@@ -546,29 +549,18 @@
     <footer class="nexora-footer">
 
       <div class="nexora-branding">
-
         <a id="nexoraLogoLink" target="_blank" rel="noopener">
-          <img
-            id="nexoraLogo"
-            alt="Nexora Corporation"
-            class="nexora-logo"
-          >
+          <img id="nexoraLogo" alt="Nexora Corporation" class="nexora-logo">
         </a>
-
         <div class="nexora-heading">
           <h2>NEXORA</h2>
-          <span>
-            CONNECT <b>•</b> CREATE <b>•</b> EXPERIENCE
-          </span>
+          <span>CONNECT <b>•</b> CREATE <b>•</b> EXPERIENCE</span>
         </div>
-
       </div>
 
       <div class="nexora-divider"></div>
 
-      <p class="copyright">
-        © <span id="copyrightYear"></span> Nexora Corporation
-      </p>
+      <p class="copyright">© <span id="copyrightYear"></span> Nexora Corporation</p>
 
     </footer>
 
@@ -577,229 +569,292 @@
 </div>
 
 
+<!-- COMPARE BAR -->
+<div class="compare-bar hidden" id="compareBar">
+  <div class="compare-chips" id="compareChips"></div>
+  <button class="primary-btn" id="openCompare">Compare</button>
+  <button class="ghost-btn" id="clearCompare" aria-label="Clear comparison"><svg class="i"><use href="#i-x"/></svg></button>
+</div>
+
+
 <!-- ================= PROFILE MODAL ================= -->
-
 <div class="modal-backdrop hidden" id="profileModal">
-
   <div class="modal profile-modal">
-
-    <button class="modal-close" data-close="profileModal">×</button>
-
+    <button class="modal-close" data-close="profileModal" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
     <div id="profileContent"></div>
-
   </div>
-
 </div>
 
 
 <!-- ================= REQUEST MODAL ================= -->
-
 <div class="modal-backdrop hidden" id="requestModal">
-
   <div class="modal">
-
-    <button class="modal-close" data-close="requestModal">×</button>
+    <button class="modal-close" data-close="requestModal" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
 
     <div class="modal-kicker">REQUEST HELP</div>
-
     <h2 id="requestWorkerName">Request a worker</h2>
+    <p class="modal-subtitle">Describe the problem so they know what to expect.</p>
 
-    <p class="modal-subtitle">
-      Describe the problem so they know what to expect.
-    </p>
+    <div class="notice hidden" id="requestNotice"></div>
 
     <form id="requestForm">
 
       <input type="hidden" id="requestWorkerId">
 
       <label>
-        What do you need?
-        <textarea
-          id="requestDescription"
-          placeholder="Example: My router keeps disconnecting every few minutes..."
-          required
-        ></textarea>
+        Service
+        <select id="requestService"></select>
       </label>
 
       <label>
-        Preferred time
-        <select id="requestTime">
-          <option>As soon as possible</option>
-          <option>Today evening</option>
-          <option>Tomorrow morning</option>
-          <option>Tomorrow evening</option>
-          <option>I'll decide later</option>
-        </select>
+        What do you need?
+        <textarea id="requestDescription" placeholder="Example: My router keeps disconnecting every few minutes..." required></textarea>
+      </label>
+
+      <div class="form-row">
+        <label>
+          Date
+          <select id="requestDate"></select>
+        </label>
+        <label>
+          Preferred time
+          <select id="requestTime">
+            <option>As soon as possible</option>
+            <option>Morning (9–12)</option>
+            <option>Afternoon (12–4)</option>
+            <option>Evening (4–8)</option>
+          </select>
+        </label>
+      </div>
+
+      <label>
+        Address / landmark
+        <input id="requestAddress" type="text" placeholder="House no., street, landmark" required>
       </label>
 
       <label>
         Add a photo <span>(optional)</span>
         <input type="file" id="requestPhoto" accept="image/*">
       </label>
+      <img class="photo-preview hidden" id="photoPreview" alt="Selected photo preview">
 
       <div class="emergency-toggle">
         <label>
           <input type="checkbox" id="emergencyRequest">
           <span>
             <strong>Emergency request</strong>
-            <small>Prioritize this issue for urgent help.</small>
+            <small>Prioritise this issue for urgent help (+₹100 priority fee).</small>
           </span>
         </label>
       </div>
 
-      <button class="primary-btn full" type="submit">
-        Send request
-      </button>
+      <div class="estimate" id="requestEstimate"></div>
+
+      <button class="primary-btn full" type="submit">Send request</button>
 
     </form>
-
   </div>
-
 </div>
 
 
 <!-- ================= POST JOB MODAL ================= -->
-
 <div class="modal-backdrop hidden" id="jobModal">
-
   <div class="modal">
-
-    <button class="modal-close" data-close="jobModal">×</button>
+    <button class="modal-close" data-close="jobModal" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
 
     <div class="modal-kicker">POST A JOB</div>
-
     <h2>What do you need done?</h2>
-
-    <p class="modal-subtitle">
-      Workers with matching skills can discover your request.
-    </p>
+    <p class="modal-subtitle">Workers with matching skills can discover your request.</p>
 
     <form id="jobForm">
 
       <label>
         Job title
-        <input
-          id="jobTitle"
-          type="text"
-          placeholder="e.g. Install a CCTV camera"
-          required
-        >
+        <input id="jobTitle" type="text" placeholder="e.g. Install a CCTV camera" required>
       </label>
 
       <label>
         Description
-        <textarea
-          id="jobDescription"
-          placeholder="Explain what needs to be done..."
-          required
-        ></textarea>
+        <textarea id="jobDescription" placeholder="Explain what needs to be done..." required></textarea>
       </label>
 
       <div class="form-row">
-
         <label>
           Category
           <select id="jobCategory">
             <option value="home">Home repair</option>
             <option value="tech">Technology</option>
             <option value="personal">Personal service</option>
+            <option value="cleaning">Cleaning</option>
             <option value="transport">Transport</option>
             <option value="education">Education</option>
           </select>
         </label>
-
         <label>
           Budget
-          <input
-            id="jobBudget"
-            type="text"
-            placeholder="₹500"
-          >
+          <input id="jobBudget" type="text" placeholder="₹500">
         </label>
-
       </div>
 
-      <label>
-        Area
-        <input
-          id="jobArea"
-          type="text"
-          value="Ghaziabad"
-          placeholder="Your area"
-        >
-      </label>
+      <div class="form-row">
+        <label>
+          Area
+          <input id="jobArea" type="text" value="Ghaziabad" placeholder="Your area">
+        </label>
+        <label>
+          When?
+          <select id="jobUrgency">
+            <option>Flexible</option>
+            <option>This week</option>
+            <option>Today</option>
+          </select>
+        </label>
+      </div>
 
-      <button class="primary-btn full" type="submit">
-        Post job
-      </button>
+      <button class="primary-btn full" type="submit">Post job</button>
 
     </form>
-
   </div>
-
 </div>
 
 
 <!-- ================= PAYMENT MODAL ================= -->
-
 <div class="modal-backdrop hidden" id="paymentModal">
-
   <div class="modal payment-modal">
+    <button class="modal-close" data-close="paymentModal" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
 
-    <button class="modal-close" data-close="paymentModal">×</button>
+    <div id="paymentForm">
+      <div class="payment-icon">₹</div>
+      <div class="modal-kicker">PROTOTYPE PAYMENT</div>
+      <h2>Complete payment</h2>
+      <p class="modal-subtitle">This is a demo UPI flow. No real payment will be processed.</p>
 
-    <div class="payment-icon">₹</div>
+      <div class="payment-amount" id="paymentAmount">₹250</div>
+      <div class="payment-breakdown" id="paymentBreakdown"></div>
 
-    <div class="modal-kicker">PROTOTYPE PAYMENT</div>
+      <div class="tip-row">
+        <span>Add a tip</span>
+        <div id="tipOptions">
+          <button data-tip="0" class="active">None</button>
+          <button data-tip="20">₹20</button>
+          <button data-tip="50">₹50</button>
+          <button data-tip="100">₹100</button>
+        </div>
+      </div>
 
-    <h2>Complete payment</h2>
+      <div class="upi-options" id="upiOptions">
+        <button data-upi="Google Pay">Google Pay</button>
+        <button data-upi="PhonePe">PhonePe</button>
+        <button data-upi="Paytm">Paytm</button>
+      </div>
 
-    <p class="modal-subtitle">
-      This is a demo UPI flow. No real payment will be processed.
-    </p>
-
-    <div class="payment-amount" id="paymentAmount">₹250</div>
-
-    <div class="upi-options">
-
-      <button data-upi="Google Pay">Google Pay</button>
-      <button data-upi="PhonePe">PhonePe</button>
-      <button data-upi="Paytm">Paytm</button>
-
+      <button class="primary-btn full" id="simulatePayment">Simulate payment</button>
     </div>
 
-    <button class="primary-btn full" id="simulatePayment">
-      Simulate payment
-    </button>
-
+    <div id="paymentDone" class="payment-done hidden">
+      <div class="success-check"><svg class="i"><use href="#i-check"/></svg></div>
+      <h2>Payment successful</h2>
+      <p class="modal-subtitle" id="receiptText"></p>
+      <button class="primary-btn full" data-close="paymentModal">Done</button>
+    </div>
   </div>
+</div>
 
+
+<!-- ================= REVIEW MODAL ================= -->
+<div class="modal-backdrop hidden" id="reviewModal">
+  <div class="modal small-modal">
+    <button class="modal-close" data-close="reviewModal" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+
+    <div class="modal-kicker">RATE YOUR EXPERIENCE</div>
+    <h2 id="reviewTitle">Leave a review</h2>
+
+    <form id="reviewForm">
+      <input type="hidden" id="reviewRequestId">
+      <div class="star-input" id="starInput" role="radiogroup" aria-label="Rating">
+        <button type="button" data-star="1" aria-label="1 star"><svg class="i"><use href="#i-star"/></svg></button>
+        <button type="button" data-star="2" aria-label="2 stars"><svg class="i"><use href="#i-star"/></svg></button>
+        <button type="button" data-star="3" aria-label="3 stars"><svg class="i"><use href="#i-star"/></svg></button>
+        <button type="button" data-star="4" aria-label="4 stars"><svg class="i"><use href="#i-star"/></svg></button>
+        <button type="button" data-star="5" aria-label="5 stars"><svg class="i"><use href="#i-star"/></svg></button>
+      </div>
+      <div class="chip-row" id="reviewTags">
+        <button type="button">On time</button>
+        <button type="button">Polite</button>
+        <button type="button">Fair price</button>
+        <button type="button">Neat work</button>
+        <button type="button">Explained well</button>
+      </div>
+      <label>
+        Comment <span>(optional)</span>
+        <textarea id="reviewText" placeholder="Tell others how it went..."></textarea>
+      </label>
+      <button class="primary-btn full" type="submit">Submit review</button>
+    </form>
+  </div>
+</div>
+
+
+<!-- ================= COMPARE MODAL ================= -->
+<div class="modal-backdrop hidden" id="compareModal">
+  <div class="modal wide-modal">
+    <button class="modal-close" data-close="compareModal" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+    <div class="modal-kicker">SIDE BY SIDE</div>
+    <h2>Compare workers</h2>
+    <div id="compareContent"></div>
+  </div>
+</div>
+
+
+<!-- ================= LOCATION MODAL ================= -->
+<div class="modal-backdrop hidden" id="locationModal">
+  <div class="modal small-modal">
+    <button class="modal-close" data-close="locationModal" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+    <div class="modal-kicker">LOCATION</div>
+    <h2>Choose your city</h2>
+    <div class="language-options" id="locationOptions"></div>
+  </div>
+</div>
+
+
+<!-- ================= SETTINGS MODAL ================= -->
+<div class="modal-backdrop hidden" id="settingsModal">
+  <div class="modal small-modal">
+    <button class="modal-close" data-close="settingsModal" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+    <div class="modal-kicker">PROFILE</div>
+    <h2>Settings</h2>
+
+    <form id="settingsForm">
+      <label>
+        Your name
+        <input id="settingsName" type="text" maxlength="24" required>
+      </label>
+
+      <div class="segmented" id="themeSegment" role="radiogroup" aria-label="Theme">
+        <button type="button" data-theme-opt="light"><svg class="i"><use href="#i-sun"/></svg> Light</button>
+        <button type="button" data-theme-opt="dark"><svg class="i"><use href="#i-moon"/></svg> Dark</button>
+      </div>
+
+      <button class="primary-btn full" type="submit">Save changes</button>
+      <button class="danger-btn full" type="button" id="resetData">Reset all demo data</button>
+    </form>
+  </div>
 </div>
 
 
 <!-- ================= LANGUAGE MODAL ================= -->
-
 <div class="modal-backdrop hidden" id="languageModal">
-
   <div class="modal small-modal">
-
-    <button class="modal-close" data-close="languageModal">×</button>
-
+    <button class="modal-close" data-close="languageModal" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
     <div class="modal-kicker">LANGUAGE</div>
-
     <h2>Choose language</h2>
-
     <div class="language-options">
-
       <button data-lang="EN">🇬🇧 English</button>
       <button data-lang="HI">🇮🇳 हिन्दी</button>
       <button data-lang="BN">বাংলা</button>
       <button data-lang="TA">தமிழ்</button>
-
     </div>
-
   </div>
-
 </div>
 
 
