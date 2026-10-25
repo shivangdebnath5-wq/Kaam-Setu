@@ -1,3 +1,5 @@
+"use strict";
+
 /* =========================================================
    KAAMSETU
    Frontend-only prototype
@@ -27,255 +29,362 @@ document.getElementById("copyrightYear").textContent =
 
 
 /* =========================================================
+   HELPERS
+   ========================================================= */
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+
+const esc = s =>
+  String(s ?? "").replace(/[&<>"']/g, c => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+
+const icon = (name, cls = "") =>
+  `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+
+const ICON_NAMES = new Set([
+  "home","clock","heart","activity","plus","chat","sun","moon","bell","mic","search","pin",
+  "filter","star","check","x","shield","compare","send","trash","share","back","bolt","menu",
+  "user","camera","calendar","target","sparkle","phone"
+]);
+
+const rupee = n => "₹" + Number(n).toLocaleString("en-IN");
+
+const prefersReducedMotion =
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function timeAgo(iso) {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 45) return "just now";
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} hr ago`;
+  if (s < 604800) return `${Math.round(s / 86400)} d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+const clockTime = iso =>
+  iso ? new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+
+function debounce(fn, ms) {
+  let t;
+  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+function countTo(el, to, { dec = 0, dur = 800 } = {}) {
+
+  const from = parseFloat(el.dataset.v || 0);
+  el.dataset.v = to;
+
+  if (prefersReducedMotion || from === to) {
+    el.textContent = to.toFixed(dec);
+    return;
+  }
+
+  const t0 = performance.now();
+
+  const step = now => {
+    const p = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = (from + (to - from) * eased).toFixed(dec);
+    if (p < 1) requestAnimationFrame(step);
+  };
+
+  requestAnimationFrame(step);
+}
+
+function starsHTML(n) {
+  return `<span class="stars" aria-label="${n} out of 5">` +
+    [1, 2, 3, 4, 5].map(i => icon("star", i <= Math.round(n) ? "" : "off")).join("") +
+    `</span>`;
+}
+
+
+/* =========================================================
    WORKER DATA
    ========================================================= */
 
-const workers = {
+const CITIES = {
+  "Ghaziabad": ["Raj Nagar", "Indirapuram", "Vaishali"],
+  "Noida": ["Sector 18", "Sector 62", "Sector 137"],
+  "Greater Noida": ["Alpha 1", "Pari Chowk", "Knowledge Park"],
+  "Delhi": ["Dwarka", "Rohini", "Saket"],
+  "Gurugram": ["DLF Phase 3", "Sohna Road", "Sector 56"]
+};
 
-  rohit: {
-    id: "rohit",
-    name: "Rohit Kumar",
-    initials: "RK",
-    role: "Wi-Fi & Network Technician",
-    category: "tech",
+const CATEGORY_NAMES = {
+  home: "Home repair",
+  tech: "Technology",
+  personal: "Personal services",
+  cleaning: "Cleaning",
+  transport: "Transport",
+  education: "Education"
+};
 
-    rating: 4.9,
-    jobs: 128,
-    price: 250,
-    distance: 1.8,
+const workerList = [
 
-    verified: true,
-    available: true,
-
-    availability: "Available now",
-
-    skills: [
-      "Wi-Fi",
-      "Router",
-      "CCTV",
-      "Broadband",
-      "Networking"
+  {
+    id: "rohit", name: "Rohit Kumar", initials: "RK",
+    role: "Wi-Fi & Network Technician", category: "tech",
+    rating: 4.9, jobs: 128, distance: 1.8, verified: true, available: true,
+    availability: "Available now", response: 8, experience: "6 years",
+    languages: "Hindi, English", hours: "9 AM – 9 PM",
+    pos: { x: 38, y: 38 },
+    skills: ["Wi-Fi", "Router", "CCTV", "Broadband", "Networking"],
+    intents: ["wifi", "cctv"],
+    services: [
+      { name: "Wi-Fi / router setup", price: 250 },
+      { name: "Broadband troubleshooting", price: 300 },
+      { name: "CCTV camera installation", price: 600 },
+      { name: "Network cabling (per point)", price: 450 }
     ],
-
-    bio:
-      "Helps with home Wi-Fi, router setup, broadband issues, CCTV and basic networking. Focused on quick home visits and clear explanations.",
-
-    experience: "6 years",
-
+    bio: "Helps with home Wi-Fi, router setup, broadband issues, CCTV and basic networking. Focused on quick home visits and clear explanations.",
     reviews: [
-      {
-        name: "Neha",
-        text:
-          "Fixed my router quickly and explained the issue clearly."
-      },
-      {
-        name: "Arjun",
-        text:
-          "Good communication and arrived on time."
-      }
+      { name: "Neha", rating: 5, text: "Fixed my router quickly and explained the issue clearly." },
+      { name: "Arjun", rating: 5, text: "Good communication and arrived on time." }
     ]
   },
 
-  priya: {
-    id: "priya",
-    name: "Priya Sharma",
-    initials: "PS",
-    role: "Tailoring & Alterations",
-    category: "personal",
-
-    rating: 4.8,
-    jobs: 94,
-    price: 150,
-    distance: 2.4,
-
-    verified: true,
-    available: true,
-
-    availability: "Available today",
-
-    skills: [
-      "Tailoring",
-      "Alterations",
-      "Stitching",
-      "Custom"
+  {
+    id: "priya", name: "Priya Sharma", initials: "PS",
+    role: "Tailoring & Alterations", category: "personal",
+    rating: 4.8, jobs: 94, distance: 2.4, verified: true, available: true,
+    availability: "Available today", response: 15, experience: "5 years",
+    languages: "Hindi, English", hours: "10 AM – 7 PM",
+    pos: { x: 67, y: 30 },
+    skills: ["Tailoring", "Alterations", "Stitching", "Custom"],
+    intents: ["tailoring"],
+    services: [
+      { name: "Clothing alterations", price: 150 },
+      { name: "Zip / button replacement", price: 180 },
+      { name: "Blouse stitching", price: 450 },
+      { name: "Suit / kurta stitching", price: 900 }
     ],
-
-    bio:
-      "Provides clothing alterations, stitching and custom tailoring for everyday wear and special occasions.",
-
-    experience: "5 years",
-
+    bio: "Provides clothing alterations, stitching and custom tailoring for everyday wear and special occasions.",
     reviews: [
-      {
-        name: "Meera",
-        text:
-          "Very neat stitching and delivered when promised."
-      },
-      {
-        name: "Riya",
-        text:
-          "Great alteration work and friendly service."
-      }
+      { name: "Meera", rating: 5, text: "Very neat stitching and delivered when promised." },
+      { name: "Riya", rating: 5, text: "Great alteration work and friendly service." }
     ]
   },
 
-  amit: {
-    id: "amit",
-    name: "Amit Meena",
-    initials: "AM",
-    role: "Electrician & Home Repair",
-    category: "home",
-
-    rating: 4.7,
-    jobs: 76,
-    price: 200,
-    distance: 3.1,
-
-    verified: true,
-    available: false,
-
-    availability: "Busy right now",
-
-    skills: [
-      "Electrical",
-      "Fan repair",
-      "Wiring",
-      "Switches",
-      "Sockets"
+  {
+    id: "amit", name: "Amit Meena", initials: "AM",
+    role: "Electrician & Home Repair", category: "home",
+    rating: 4.7, jobs: 76, distance: 3.1, verified: true, available: false,
+    availability: "Busy right now", response: 25, experience: "7 years",
+    languages: "Hindi", hours: "8 AM – 8 PM",
+    pos: { x: 57, y: 69 },
+    skills: ["Electrical", "Fan repair", "Wiring", "Switches", "Sockets"],
+    intents: ["electrical"],
+    services: [
+      { name: "Fan repair", price: 200 },
+      { name: "Switch / socket replacement", price: 220 },
+      { name: "Wiring inspection", price: 350 },
+      { name: "MCB / inverter fix", price: 400 }
     ],
-
-    bio:
-      "Handles everyday electrical repairs including fans, switches, sockets, wiring and small home maintenance jobs.",
-
-    experience: "7 years",
-
+    bio: "Handles everyday electrical repairs including fans, switches, sockets, wiring and small home maintenance jobs.",
     reviews: [
-      {
-        name: "Rahul",
-        text:
-          "Solved a difficult fan issue without wasting time."
-      },
-      {
-        name: "Karan",
-        text:
-          "Professional and explained the repair before starting."
-      }
+      { name: "Rahul", rating: 5, text: "Solved a difficult fan issue without wasting time." },
+      { name: "Karan", rating: 4, text: "Professional and explained the repair before starting." }
     ]
   },
 
-  sunil: {
-    id: "sunil",
-    name: "Sunil Verma",
-    initials: "SV",
-    role: "AC & Appliance Technician",
-    category: "home",
-
-    rating: 4.8,
-    jobs: 112,
-    price: 350,
-    distance: 4.2,
-
-    verified: true,
-    available: true,
-
-    availability: "Available now",
-
-    skills: [
-      "AC",
-      "Cooler",
-      "Appliances",
-      "Maintenance"
+  {
+    id: "sunil", name: "Sunil Verma", initials: "SV",
+    role: "AC & Appliance Technician", category: "home",
+    rating: 4.8, jobs: 112, distance: 4.2, verified: true, available: true,
+    availability: "Available now", response: 12, experience: "8 years",
+    languages: "Hindi, English", hours: "8 AM – 9 PM",
+    pos: { x: 24, y: 64 },
+    skills: ["AC", "Cooler", "Appliances", "Maintenance"],
+    intents: ["ac"],
+    services: [
+      { name: "Cooler service", price: 350 },
+      { name: "AC general service", price: 499 },
+      { name: "AC gas refill", price: 1800 },
+      { name: "Appliance repair visit", price: 400 }
     ],
-
-    bio:
-      "Home appliance technician specialising in AC servicing, cooler maintenance and common appliance problems.",
-
-    experience: "8 years",
-
+    bio: "Home appliance technician specialising in AC servicing, cooler maintenance and common appliance problems.",
     reviews: [
-      {
-        name: "Vivek",
-        text:
-          "Quick AC service and fair pricing."
-      }
+      { name: "Vivek", rating: 5, text: "Quick AC service and fair pricing." }
     ]
   },
 
-  neha: {
-    id: "neha",
-    name: "Neha Singh",
-    initials: "NS",
-    role: "Home Tutor",
-    category: "education",
-
-    rating: 4.9,
-    jobs: 63,
-    price: 300,
-    distance: 2.9,
-
-    verified: true,
-    available: true,
-
-    availability: "Available evenings",
-
-    skills: [
-      "Maths",
-      "Science",
-      "Class 5–8",
-      "Homework"
+  {
+    id: "neha", name: "Neha Singh", initials: "NS",
+    role: "Home Tutor", category: "education",
+    rating: 4.9, jobs: 63, distance: 2.9, verified: true, available: true,
+    availability: "Available evenings", response: 30, experience: "4 years",
+    languages: "Hindi, English", hours: "4 PM – 8 PM",
+    pos: { x: 78, y: 58 },
+    skills: ["Maths", "Science", "Class 5–8", "Homework"],
+    intents: ["education"],
+    services: [
+      { name: "Home tuition (1 hour)", price: 300 },
+      { name: "Exam preparation (1 hour)", price: 350 },
+      { name: "Monthly package (12 hours)", price: 3200 }
     ],
-
-    bio:
-      "Provides personalised tutoring support for school students with a focus on clear explanations and practice.",
-
-    experience: "4 years",
-
+    bio: "Provides personalised tutoring support for school students with a focus on clear explanations and practice.",
     reviews: [
-      {
-        name: "Ananya",
-        text:
-          "Explains difficult topics in a very simple way."
-      }
+      { name: "Ananya", rating: 5, text: "Explains difficult topics in a very simple way." }
     ]
   },
 
-  mohit: {
-    id: "mohit",
-    name: "Mohit Yadav",
-    initials: "MY",
-    role: "Local Delivery & Transport",
-    category: "transport",
-
-    rating: 4.6,
-    jobs: 87,
-    price: 180,
-    distance: 1.5,
-
-    verified: false,
-    available: true,
-
-    availability: "Available now",
-
-    skills: [
-      "Local delivery",
-      "Pickup",
-      "Small transport"
+  {
+    id: "mohit", name: "Mohit Yadav", initials: "MY",
+    role: "Local Delivery & Transport", category: "transport",
+    rating: 4.6, jobs: 87, distance: 1.5, verified: false, available: true,
+    availability: "Available now", response: 6, experience: "3 years",
+    languages: "Hindi", hours: "7 AM – 10 PM",
+    pos: { x: 44, y: 21 },
+    skills: ["Local delivery", "Pickup", "Small transport"],
+    intents: ["transport"],
+    services: [
+      { name: "Local delivery", price: 180 },
+      { name: "Parcel pickup", price: 200 },
+      { name: "Errand run", price: 220 },
+      { name: "Small load transport", price: 450 }
     ],
-
-    bio:
-      "Helps with local pickups, deliveries and small transport requirements around the city.",
-
-    experience: "3 years",
-
+    bio: "Helps with local pickups, deliveries and small transport requirements around the city.",
     reviews: [
-      {
-        name: "Aman",
-        text:
-          "Fast local delivery and good communication."
-      }
+      { name: "Aman", rating: 5, text: "Fast local delivery and good communication." }
+    ]
+  },
+
+  {
+    id: "imran", name: "Imran Khan", initials: "IK",
+    role: "Plumber", category: "home",
+    rating: 4.8, jobs: 101, distance: 2.2, verified: true, available: true,
+    availability: "Available now", response: 10, experience: "9 years",
+    languages: "Hindi, Urdu", hours: "7 AM – 9 PM",
+    pos: { x: 32, y: 55 },
+    skills: ["Plumbing", "Leakage", "Taps", "Bathroom fitting", "Water tank"],
+    intents: ["plumbing"],
+    services: [
+      { name: "Tap / leakage repair", price: 220 },
+      { name: "Drain unblocking", price: 350 },
+      { name: "Bathroom fitting", price: 600 },
+      { name: "Water tank cleaning", price: 700 }
+    ],
+    bio: "Fixes leaks, blocked drains and bathroom fittings quickly, and tidies up after every job.",
+    reviews: [
+      { name: "Sana", rating: 5, text: "Stopped a leak that two others couldn't find." },
+      { name: "Pankaj", rating: 5, text: "Came within the hour and charged exactly what he quoted." }
+    ]
+  },
+
+  {
+    id: "deepak", name: "Deepak Rawat", initials: "DR",
+    role: "Carpenter", category: "home",
+    rating: 4.7, jobs: 69, distance: 3.6, verified: true, available: true,
+    availability: "Available tomorrow", response: 35, experience: "10 years",
+    languages: "Hindi", hours: "9 AM – 6 PM",
+    pos: { x: 72, y: 80 },
+    skills: ["Carpentry", "Furniture", "Door repair", "Wardrobe", "Shelves"],
+    intents: ["carpentry"],
+    services: [
+      { name: "Door / lock repair", price: 300 },
+      { name: "Furniture assembly", price: 400 },
+      { name: "Wardrobe repair", price: 500 },
+      { name: "Custom shelf", price: 1200 }
+    ],
+    bio: "Repairs and builds furniture, doors, shelves and wardrobes with clean finishing.",
+    reviews: [
+      { name: "Isha", rating: 5, text: "Built a shelf that fits the wall perfectly." }
+    ]
+  },
+
+  {
+    id: "suresh", name: "Suresh Patel", initials: "SP",
+    role: "Painter", category: "home",
+    rating: 4.6, jobs: 54, distance: 4.8, verified: false, available: true,
+    availability: "Available this week", response: 45, experience: "12 years",
+    languages: "Hindi, Gujarati", hours: "8 AM – 6 PM",
+    pos: { x: 14, y: 30 },
+    skills: ["Painting", "Wall touch-up", "Waterproofing", "Whitewash"],
+    intents: ["painting"],
+    services: [
+      { name: "Wall touch-up", price: 600 },
+      { name: "Waterproofing patch", price: 900 },
+      { name: "Single room painting", price: 3500 }
+    ],
+    bio: "Interior painting, touch-ups and damp-patch treatment with neat edges and minimal mess.",
+    reviews: [
+      { name: "Gaurav", rating: 4, text: "Good finish, took a day longer than planned." }
+    ]
+  },
+
+  {
+    id: "kavita", name: "Kavita Devi", initials: "KD",
+    role: "Home Cleaning Specialist", category: "cleaning",
+    rating: 4.9, jobs: 140, distance: 2.7, verified: true, available: true,
+    availability: "Available today", response: 14, experience: "7 years",
+    languages: "Hindi", hours: "8 AM – 6 PM",
+    pos: { x: 85, y: 40 },
+    skills: ["Deep cleaning", "Kitchen", "Bathroom", "Sofa cleaning"],
+    intents: ["cleaning"],
+    services: [
+      { name: "Bathroom deep clean", price: 350 },
+      { name: "Kitchen deep clean", price: 600 },
+      { name: "Sofa / carpet cleaning", price: 700 },
+      { name: "Full home cleaning", price: 1800 }
+    ],
+    bio: "Thorough, reliable home cleaning with eco-friendly products and a team that arrives on time.",
+    reviews: [
+      { name: "Tanya", rating: 5, text: "The kitchen looked brand new. Highly recommend." },
+      { name: "Mohan", rating: 5, text: "Very punctual and polite." }
+    ]
+  },
+
+  {
+    id: "anjali", name: "Anjali Gupta", initials: "AG",
+    role: "Beautician (at home)", category: "personal",
+    rating: 4.8, jobs: 88, distance: 3.3, verified: true, available: false,
+    availability: "Busy till 5 PM", response: 20, experience: "6 years",
+    languages: "Hindi, English", hours: "10 AM – 8 PM",
+    pos: { x: 60, y: 14 },
+    skills: ["Haircut", "Facial", "Makeup", "Manicure"],
+    intents: ["beauty"],
+    services: [
+      { name: "Haircut at home", price: 300 },
+      { name: "Manicure / pedicure", price: 500 },
+      { name: "Facial", price: 600 },
+      { name: "Party / bridal makeup", price: 4500 }
+    ],
+    bio: "Salon-quality beauty services at your doorstep, with hygienic, sealed kits.",
+    reviews: [
+      { name: "Pooja", rating: 5, text: "Loved my makeup and she was so patient." }
+    ]
+  },
+
+  {
+    id: "vikram", name: "Vikram Singh", initials: "VS",
+    role: "Bike & Car Mechanic", category: "transport",
+    rating: 4.7, jobs: 96, distance: 3.9, verified: true, available: true,
+    availability: "Available now", response: 18, experience: "11 years",
+    languages: "Hindi, Punjabi", hours: "8 AM – 8 PM",
+    pos: { x: 18, y: 78 },
+    skills: ["Bike service", "Puncture", "Battery", "Car check-up"],
+    intents: ["mechanic"],
+    services: [
+      { name: "Puncture repair", price: 100 },
+      { name: "Battery jump-start", price: 250 },
+      { name: "Bike general service", price: 400 },
+      { name: "Car check-up", price: 600 }
+    ],
+    bio: "Roadside and doorstep help for two-wheelers and cars: punctures, batteries and routine servicing.",
+    reviews: [
+      { name: "Harsh", rating: 5, text: "Reached me in 15 minutes when my bike died." }
     ]
   }
-};
+];
+
+const workers = Object.fromEntries(
+  workerList.map(w => {
+    w.price = Math.min(...w.services.map(s => s.price));
+    return [w.id, w];
+  })
+);
 
 
 /* =========================================================
@@ -287,218 +396,334 @@ const STORAGE = {
   saved: "ks_saved",
   activity: "ks_activity",
   jobs: "ks_jobs",
-  messages: "ks_messages"
+  messages: "ks_messages",
+  reviews: "ks_reviews",
+  settings: "ks_settings",
+  recent: "ks_recent",
+  seen: "ks_notif_seen",
+  theme: "ks_theme"
 };
 
+let storageWarned = false;
+
 function load(key, fallback = []) {
-
   try {
-
-    const data = JSON.parse(
-      localStorage.getItem(key)
-    );
-
+    const data = JSON.parse(localStorage.getItem(key));
     return data ?? fallback;
-
   } catch {
-
     return fallback;
   }
 }
 
 function save(key, value) {
-  localStorage.setItem(
-    key,
-    JSON.stringify(value)
-  );
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    if (!storageWarned) {
+      storageWarned = true;
+      toast("Couldn't save to this browser (storage full or blocked).", { type: "warn", icon: "shield" });
+    }
+  }
 }
+
+const DEFAULT_SETTINGS = { name: "Blade", lang: "EN", city: "Ghaziabad", address: "" };
 
 let requests = load(STORAGE.requests);
 let savedWorkers = load(STORAGE.saved);
 let activity = load(STORAGE.activity);
 let postedJobs = load(STORAGE.jobs);
-let messages = load(STORAGE.messages);
+let messages = load(STORAGE.messages, {});
+let reviewsStore = load(STORAGE.reviews, {});
+let recentSearches = load(STORAGE.recent);
+let notifSeen = load(STORAGE.seen, 0);
+let settings = { ...DEFAULT_SETTINGS, ...load(STORAGE.settings, {}) };
+
+// old versions stored messages in an array, which lost data on reload
+if (Array.isArray(messages)) messages = {};
+if (!CITIES[settings.city]) settings.city = DEFAULT_SETTINGS.city;
+
+// re-apply saved reviews to worker ratings
+function applyReview(workerId, review) {
+  const w = workers[workerId];
+  if (!w) return;
+  const n = w.jobs;
+  w.rating = Math.round(((w.rating * n + review.rating) / (n + 1)) * 10) / 10;
+  w.reviews.unshift(review);
+}
+
+Object.entries(reviewsStore).forEach(([id, list]) => {
+  [...list].reverse().forEach(r => applyReview(id, r));
+});
 
 
 /* =========================================================
-   ELEMENTS
+   TOASTS
    ========================================================= */
 
-const workerGrid =
-  document.getElementById("workerGrid");
+function toast(message, opts = {}) {
 
-const savedGrid =
-  document.getElementById("savedGrid");
+  const el = document.createElement("div");
+  el.className = `toast ${opts.type || ""}`;
+  el.setAttribute("role", "status");
 
-const requestsList =
-  document.getElementById("requestsList");
+  el.innerHTML = `
+    <span class="t-icon">${icon(opts.icon || "check")}</span>
+    <span>${esc(message)}</span>
+  `;
 
-const activityList =
-  document.getElementById("activityList");
+  const remove = () => {
+    el.classList.add("out");
+    setTimeout(() => el.remove(), 300);
+  };
 
-const postedJobsContainer =
-  document.getElementById("postedJobs");
+  if (opts.action) {
+    const b = document.createElement("button");
+    b.textContent = opts.action.label;
+    b.addEventListener("click", () => { opts.action.fn(); remove(); });
+    el.appendChild(b);
+  }
 
-const requestBadge =
-  document.getElementById("requestBadge");
+  $("#toasts").appendChild(el);
+  setTimeout(remove, opts.action ? 5500 : 3300);
+}
 
-const searchInput =
-  document.getElementById("searchInput");
 
-const smartMatch =
-  document.getElementById("smartMatch");
+/* =========================================================
+   MODALS
+   ========================================================= */
 
-const smartTitle =
-  document.getElementById("smartTitle");
+let lastFocus = null;
 
-const smartDescription =
-  document.getElementById("smartDescription");
+function openModal(id) {
+  const m = document.getElementById(id);
+  if (!m) return;
+  lastFocus = document.activeElement;
+  m.classList.remove("hidden", "closing");
+  document.body.style.overflow = "hidden";
+  m.querySelector(".modal")?.focus({ preventScroll: true });
+}
 
-const matchCount =
-  document.getElementById("matchCount");
+function closeModal(id) {
+
+  const m = document.getElementById(id);
+  if (!m || m.classList.contains("hidden")) return;
+
+  m.classList.add("closing");
+
+  setTimeout(() => {
+    m.classList.add("hidden");
+    m.classList.remove("closing");
+    if (!$$(".modal-backdrop:not(.hidden)").length) {
+      document.body.style.overflow = "";
+    }
+    lastFocus?.focus?.({ preventScroll: true });
+  }, 200);
+}
+
+function closeAllModals() {
+  $$(".modal-backdrop:not(.hidden)").forEach(m => {
+    m.classList.add("hidden");
+    m.classList.remove("closing");
+  });
+  document.body.style.overflow = "";
+}
+
+$$(".modal").forEach(m => {
+  m.setAttribute("tabindex", "-1");
+  m.setAttribute("role", "dialog");
+  m.setAttribute("aria-modal", "true");
+});
+
+
+/* =========================================================
+   THEME
+   ========================================================= */
+
+function applyTheme(theme, animate = false) {
+
+  const root = document.documentElement;
+
+  if (animate && !prefersReducedMotion) {
+    root.classList.add("theme-transition");
+    setTimeout(() => root.classList.remove("theme-transition"), 550);
+  }
+
+  root.dataset.theme = theme;
+
+  $("#themeColorMeta").content = theme === "light" ? "#f3f5fa" : "#080b10";
+
+  $$("[data-theme-opt]").forEach(b =>
+    b.classList.toggle("active", b.dataset.themeOpt === theme)
+  );
+}
+
+function setTheme(theme) {
+  applyTheme(theme, true);
+  save(STORAGE.theme, theme);
+}
+
+$("#themeToggle").addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  setTheme(next);
+});
+
+window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", e => {
+  if (!localStorage.getItem(STORAGE.theme)) applyTheme(e.matches ? "light" : "dark", true);
+});
+
+
+/* =========================================================
+   LANGUAGE (English + Hindi UI strings)
+   ========================================================= */
+
+const I18N = {
+
+  EN: {
+    nav_discover: "Discover", nav_discover_s: "Find local help",
+    nav_requests: "My Requests", nav_requests_s: "Track your jobs",
+    nav_saved: "Saved Workers", nav_saved_s: "Your favourites",
+    nav_activity: "Activity", nav_activity_s: "Recent updates",
+    nav_jobs: "Post a Job", nav_jobs_s: "Let workers find you",
+    nav_messages: "Messages", nav_messages_s: "Talk to workers",
+    trust_t: "Built for local trust",
+    trust_p: "Discover nearby workers, compare skills and track your requests.",
+    nearby: "Nearby",
+    eyebrow: "LOCAL HELP, SIMPLIFIED",
+    heroA: "Tell us what you need.",
+    heroB: "KaamSetu finds the match.",
+    heroP: "Describe your problem naturally and discover nearby workers with the right skills.",
+    search_ph: "e.g. My Wi-Fi keeps disconnecting...",
+    find: "Find help",
+    popular: "Popular services",
+    workers_near: "Workers around you",
+    recommended: "Recommended workers",
+    best_matches: "Best matches for your problem",
+    title_discover: "Discover", sub_discover: "Find trusted help around you.",
+    title_requests: "My Requests", sub_requests: "Track your jobs from request to completion.",
+    title_saved: "Saved Workers", sub_saved: "Your trusted local workers.",
+    title_activity: "Activity", sub_activity: "Your recent KaamSetu activity.",
+    title_jobs: "Post a Job", sub_jobs: "Let local workers discover your work.",
+    title_messages: "Messages", sub_messages: "Talk directly with workers."
+  },
+
+  HI: {
+    nav_discover: "खोजें", nav_discover_s: "स्थानीय मदद ढूँढें",
+    nav_requests: "मेरे अनुरोध", nav_requests_s: "अपने काम ट्रैक करें",
+    nav_saved: "सेव किए कारीगर", nav_saved_s: "आपके पसंदीदा",
+    nav_activity: "गतिविधि", nav_activity_s: "ताज़ा अपडेट",
+    nav_jobs: "काम पोस्ट करें", nav_jobs_s: "कारीगर आपको खोजें",
+    nav_messages: "संदेश", nav_messages_s: "कारीगरों से बात करें",
+    trust_t: "स्थानीय भरोसे के लिए बना",
+    trust_p: "पास के कारीगर खोजें, हुनर की तुलना करें और अनुरोध ट्रैक करें।",
+    nearby: "पास में",
+    eyebrow: "स्थानीय मदद, आसान",
+    heroA: "बताइए आपको क्या चाहिए।",
+    heroB: "KaamSetu सही कारीगर ढूँढेगा।",
+    heroP: "अपनी समस्या सामान्य भाषा में बताइए और सही हुनर वाले आस-पास के कारीगर पाइए।",
+    search_ph: "जैसे: मेरा वाई-फाई बार-बार कट रहा है...",
+    find: "मदद खोजें",
+    popular: "लोकप्रिय सेवाएँ",
+    workers_near: "आपके आस-पास कारीगर",
+    recommended: "सुझाए गए कारीगर",
+    best_matches: "आपकी समस्या के लिए सबसे अच्छे विकल्प",
+    title_discover: "खोजें", sub_discover: "अपने आस-पास भरोसेमंद मदद खोजें।",
+    title_requests: "मेरे अनुरोध", sub_requests: "अनुरोध से काम पूरा होने तक ट्रैक करें।",
+    title_saved: "सेव किए कारीगर", sub_saved: "आपके भरोसेमंद स्थानीय कारीगर।",
+    title_activity: "गतिविधि", sub_activity: "आपकी हालिया KaamSetu गतिविधि।",
+    title_jobs: "काम पोस्ट करें", sub_jobs: "स्थानीय कारीगर आपका काम खोजें।",
+    title_messages: "संदेश", sub_messages: "कारीगरों से सीधे बात करें।"
+  }
+};
+
+function t(key) {
+  return (I18N[settings.lang] || I18N.EN)[key] ?? I18N.EN[key] ?? key;
+}
+
+const VOICE_LANG = { EN: "en-IN", HI: "hi-IN", BN: "bn-IN", TA: "ta-IN" };
+
+function applyLang() {
+
+  $$("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $$("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+
+  $("#languageButton").textContent = settings.lang;
+  document.documentElement.lang = settings.lang === "HI" ? "hi" : "en";
+
+  updatePageHeader(currentView);
+  $("#workerHeading").textContent =
+    searchInput.value.trim() ? t("best_matches") : t("recommended");
+}
 
 
 /* =========================================================
    NAVIGATION
    ========================================================= */
 
-const navItems =
-  document.querySelectorAll(".nav-item");
+const navItems = $$(".nav-item");
+const views = $$(".view");
+const pageTitle = $("#pageTitle");
+const pageSubtitle = $("#pageSubtitle");
 
-const views =
-  document.querySelectorAll(".view");
+let currentView = "discover";
 
-const pageTitle =
-  document.getElementById("pageTitle");
-
-const pageSubtitle =
-  document.getElementById("pageSubtitle");
-
-const pageInfo = {
-
-  discover: [
-    "Discover",
-    "Find trusted help around you."
-  ],
-
-  requests: [
-    "My Requests",
-    "Track your jobs from request to completion."
-  ],
-
-  saved: [
-    "Saved Workers",
-    "Your trusted local workers."
-  ],
-
-  activity: [
-    "Activity",
-    "Your recent KaamSetu activity."
-  ],
-
-  jobs: [
-    "Post a Job",
-    "Let local workers discover your work."
-  ],
-
-  messages: [
-    "Messages",
-    "Talk directly with workers."
-  ]
-};
+function updatePageHeader(view) {
+  pageTitle.textContent = t(`title_${view}`);
+  pageSubtitle.textContent = t(`sub_${view}`);
+}
 
 function showView(viewName) {
 
-  views.forEach(view => {
-    view.classList.remove("active");
-  });
+  currentView = viewName;
 
-  const target =
-    document.getElementById(
-      `${viewName}View`
-    );
+  views.forEach(v => v.classList.remove("active"));
 
-  if (target) {
-    target.classList.add("active");
-  }
+  const target = document.getElementById(`${viewName}View`);
+  if (target) target.classList.add("active");
 
   navItems.forEach(item => {
-    item.classList.toggle(
-      "active",
-      item.dataset.view === viewName
-    );
+    item.classList.toggle("active", item.dataset.view === viewName);
   });
 
-  if (pageInfo[viewName]) {
+  updatePageHeader(viewName);
 
-    pageTitle.textContent =
-      pageInfo[viewName][0];
+  if (viewName !== "messages") $("#messagesLayout").classList.remove("chat-open");
 
-    pageSubtitle.textContent =
-      pageInfo[viewName][1];
-  }
+  if (viewName === "requests") renderRequests();
+  if (viewName === "saved") renderSaved();
+  if (viewName === "activity") renderActivity();
+  if (viewName === "jobs") renderJobs();
+  if (viewName === "messages") renderConversations();
 
-  if (viewName === "requests")
-    renderRequests();
-
-  if (viewName === "saved")
-    renderSaved();
-
-  if (viewName === "activity")
-    renderActivity();
-
-  if (viewName === "jobs")
-    renderJobs();
-
-  if (viewName === "messages")
-    renderConversations();
+  window.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
 
   closeSidebar();
 }
 
 navItems.forEach(item => {
-
-  item.addEventListener("click", () => {
-
-    showView(item.dataset.view);
-
-  });
-
+  item.addEventListener("click", () => showView(item.dataset.view));
 });
 
 
-/* =========================================================
-   MOBILE SIDEBAR
-   ========================================================= */
+/* MOBILE SIDEBAR */
 
-const sidebar =
-  document.getElementById("sidebar");
-
-const mobileMenu =
-  document.getElementById("mobileMenu");
-
-const sidebarOverlay =
-  document.getElementById("sidebarOverlay");
+const sidebar = $("#sidebar");
+const mobileMenu = $("#mobileMenu");
+const sidebarOverlay = $("#sidebarOverlay");
 
 function openSidebar() {
   sidebar.classList.add("open");
   sidebarOverlay.classList.add("show");
+  mobileMenu.setAttribute("aria-expanded", "true");
 }
 
 function closeSidebar() {
   sidebar.classList.remove("open");
   sidebarOverlay.classList.remove("show");
+  mobileMenu.setAttribute("aria-expanded", "false");
 }
 
-mobileMenu.addEventListener(
-  "click",
-  openSidebar
-);
-
-sidebarOverlay.addEventListener(
-  "click",
-  closeSidebar
-);
+mobileMenu.addEventListener("click", openSidebar);
+sidebarOverlay.addEventListener("click", closeSidebar);
 
 
 /* =========================================================
@@ -507,197 +732,262 @@ sidebarOverlay.addEventListener(
 
 const aliases = {
 
-  wifi: [
-    "wifi",
-    "wi-fi",
-    "wfi",
-    "internet",
-    "network",
-    "router",
-    "rounter",
-    "broadband",
-    "modem",
-    "disconnecting",
-    "connection"
-  ],
+  wifi: ["wifi", "wi-fi", "wfi", "internet", "network", "router", "rounter", "broadband", "modem", "disconnecting", "connection", "वाईफाई", "इंटरनेट"],
 
-  electrical: [
-    "fan",
-    "electric",
-    "electrician",
-    "socket",
-    "switch",
-    "wire",
-    "wiring",
-    "power",
-    "light"
-  ],
+  electrical: ["fan", "electric", "electrician", "socket", "switch", "wire", "wiring", "power", "light", "mcb", "inverter", "bijli", "बिजली", "पंखा"],
 
-  tailoring: [
-    "tailor",
-    "tailoring",
-    "stitching",
-    "stitch",
-    "clothes",
-    "dress",
-    "alteration",
-    "alterations"
-  ],
+  tailoring: ["tailor", "tailoring", "stitching", "stitch", "clothes", "dress", "blouse", "alteration", "alterations", "kurta", "silai", "सिलाई"],
 
-  cctv: [
-    "cctv",
-    "camera",
-    "security camera"
-  ],
+  cctv: ["cctv", "camera", "security camera"],
 
-  ac: [
-    "ac",
-    "air conditioner",
-    "cooler",
-    "cooling"
-  ],
+  ac: ["ac", "air conditioner", "cooler", "cooling", "refrigerator", "fridge", "washing machine", "एसी"],
 
-  education: [
-    "tutor",
-    "teacher",
-    "maths",
-    "math",
-    "science",
-    "homework",
-    "study"
-  ],
+  education: ["tutor", "teacher", "maths", "math", "science", "homework", "study", "tuition", "exam"],
 
-  transport: [
-    "delivery",
-    "pickup",
-    "transport",
-    "parcel",
-    "move"
-  ]
+  transport: ["delivery", "pickup", "transport", "parcel", "move", "courier", "errand"],
+
+  plumbing: ["plumber", "plumbing", "pipe", "leak", "leakage", "tap", "drain", "flush", "geyser", "water tank", "nal", "नल", "पानी"],
+
+  carpentry: ["carpenter", "carpentry", "furniture", "door", "wood", "wardrobe", "shelf", "bed", "lock", "almirah"],
+
+  painting: ["paint", "painting", "painter", "wall", "whitewash", "damp", "seepage"],
+
+  cleaning: ["clean", "cleaning", "sofa", "kitchen", "deep clean", "dust", "maid", "carpet", "safai", "सफाई"],
+
+  beauty: ["salon", "haircut", "hair", "facial", "makeup", "beautician", "parlour", "parlor", "manicure", "pedicure"],
+
+  mechanic: ["bike", "car", "puncture", "mechanic", "scooter", "tyre", "tire", "battery", "motorcycle"]
 };
 
-function normalize(text) {
+const INTENT_NAMES = {
+  wifi: "Wi-Fi / networking",
+  electrical: "electrical repair",
+  tailoring: "tailoring",
+  cctv: "CCTV / security",
+  ac: "AC & appliances",
+  education: "tuition & learning",
+  transport: "local transport",
+  plumbing: "plumbing",
+  carpentry: "carpentry",
+  painting: "painting",
+  cleaning: "home cleaning",
+  beauty: "beauty & grooming",
+  mechanic: "vehicle repair"
+};
 
-  return text
+const STOPWORDS = new Set([
+  "the", "and", "for", "with", "need", "want", "help", "please", "not", "working", "work",
+  "fix", "repair", "service", "my", "keeps", "get", "have", "has", "can", "you", "are",
+  "there", "some", "someone", "who", "any", "new", "old"
+]);
+
+const SUGGESTIONS = [
+  "Wi-Fi keeps disconnecting", "Install a CCTV camera", "Fan not working", "AC not cooling",
+  "Switch board sparking", "Tap is leaking", "Bathroom drain blocked", "Need sofa cleaning",
+  "Kitchen deep cleaning", "Stitch a blouse", "Alter my trousers", "Maths tutor for class 8",
+  "Bike puncture", "Car battery dead", "Paint my bedroom wall", "Door lock repair",
+  "Haircut at home", "Bridal makeup", "Water tank cleaning", "Pickup a parcel"
+];
+
+function normalize(text) {
+  return String(text)
     .toLowerCase()
-    .replace(/[^\w\s-]/g, " ")
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function hasPhrase(q, phrase) {
+  const safe = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^\\p{L}\\p{N}])${safe}($|[^\\p{L}\\p{N}])`, "u").test(q);
+}
+
+function lev(a, b) {
+  if (Math.abs(a.length - b.length) > 1) return 2;
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+  }
+  return dp[a.length][b.length];
 }
 
 function detectIntent(query) {
 
   const q = normalize(query);
-
+  const tokens = q.split(" ");
   const detected = [];
 
-  Object.entries(aliases)
-    .forEach(([intent, words]) => {
+  Object.entries(aliases).forEach(([intent, words]) => {
 
-      if (
-        words.some(word =>
-          q.includes(word)
-        )
-      ) {
-        detected.push(intent);
+    const hit = words.some(word => {
+      if (hasPhrase(q, word)) return true;
+      // forgive one typo on longer single words ("rounter", "plumer")
+      if (word.length >= 5 && !/[\s-]/.test(word)) {
+        return tokens.some(tk => tk.length >= 5 && lev(tk, word) <= 1);
       }
-
+      return false;
     });
+
+    if (hit) detected.push(intent);
+  });
 
   return detected;
 }
 
-function calculateMatch(worker, query) {
-
-  if (!query) return 0;
+function scoreWorker(worker, query) {
 
   const q = normalize(query);
+  const intents = detectIntent(q);
+  const tokens = q.split(" ").filter(tk => tk.length > 2 && !STOPWORDS.has(tk));
 
-  const intents =
-    detectIntent(q);
+  let relevance = 0;
 
-  let score = 35;
-
-  const workerText =
-    [
-      worker.role,
-      worker.category,
-      ...worker.skills
-    ]
-      .join(" ")
-      .toLowerCase();
+  worker.intents.forEach(i => { if (intents.includes(i)) relevance += 45; });
 
   worker.skills.forEach(skill => {
-
-    if (
-      q.includes(
-        skill.toLowerCase()
-      )
-    ) {
-      score += 13;
-    }
-
+    if (hasPhrase(q, skill.toLowerCase())) relevance += 14;
   });
 
-  if (
-    intents.includes("wifi") &&
-    worker.id === "rohit"
-  ) {
-    score += 38;
+  const text = `${worker.role} ${worker.skills.join(" ")}`.toLowerCase();
+  tokens.forEach(tk => { if (text.includes(tk)) relevance += 6; });
+
+  worker.services.forEach(s => {
+    const name = s.name.toLowerCase();
+    tokens.forEach(tk => { if (name.includes(tk)) relevance += 4; });
+  });
+
+  if (!relevance) return { score: 0, relevant: false };
+
+  let score = 30 + Math.min(relevance, 55);
+  if (worker.available) score += 4;
+  if (worker.verified) score += 3;
+  score += (worker.rating - 4.5) * 10;
+
+  return {
+    score: Math.round(Math.min(99, Math.max(25, score))),
+    relevant: true
+  };
+}
+
+function guessCategory(query) {
+  const intents = detectIntent(query);
+  const w = workerList.find(x => x.intents.some(i => intents.includes(i)));
+  return w ? w.category : "home";
+}
+
+
+/* =========================================================
+   FILTER STATE + VISIBLE WORKERS
+   ========================================================= */
+
+const searchInput = $("#searchInput");
+const workerGrid = $("#workerGrid");
+
+let currentCategory = "all";
+let skeletonTimer = null;
+
+function getFilters() {
+  return {
+    sort: $("#sortFilter").value,
+    minRating: parseFloat($("#ratingFilter").value),
+    maxPrice: parseInt($("#priceFilter").value, 10),
+    verified: $("#verifiedFilter").checked,
+    available: $("#availableFilter").checked
+  };
+}
+
+function getVisibleWorkers() {
+
+  const query = searchInput.value.trim();
+  const f = getFilters();
+
+  let list = workerList.map(worker => ({ worker, match: 0 }));
+
+  if (currentCategory !== "all") {
+    list = list.filter(i => i.worker.category === currentCategory);
   }
 
-  if (
-    intents.includes("electrical") &&
-    worker.category === "home"
-  ) {
-    score += 28;
+  if (query) {
+    list = list
+      .map(i => {
+        const r = scoreWorker(i.worker, query);
+        return { worker: i.worker, match: r.score, relevant: r.relevant };
+      })
+      .filter(i => i.relevant);
   }
 
-  if (
-    intents.includes("tailoring") &&
-    worker.id === "priya"
-  ) {
-    score += 42;
-  }
+  if (f.verified) list = list.filter(i => i.worker.verified);
+  if (f.available) list = list.filter(i => i.worker.available);
+  if (f.minRating) list = list.filter(i => i.worker.rating >= f.minRating);
+  if (f.maxPrice < 1000) list = list.filter(i => i.worker.price <= f.maxPrice);
 
-  if (
-    intents.includes("cctv") &&
-    worker.id === "rohit"
-  ) {
-    score += 35;
-  }
+  const sorters = {
+    rating: (a, b) => b.worker.rating - a.worker.rating,
+    price: (a, b) => a.worker.price - b.worker.price,
+    distance: (a, b) => a.worker.distance - b.worker.distance,
+    jobs: (a, b) => b.worker.jobs - a.worker.jobs,
+    recommended: (a, b) => {
+      if (query) return b.match - a.match;
+      const s = i => i.worker.rating * 10 + (i.worker.available ? 5 : 0) - i.worker.distance;
+      return s(b) - s(a);
+    }
+  };
 
-  if (
-    intents.includes("ac") &&
-    worker.id === "sunil"
-  ) {
-    score += 42;
-  }
+  list.sort(sorters[f.sort] || sorters.recommended);
 
-  if (
-    intents.includes("education") &&
-    worker.id === "neha"
-  ) {
-    score += 45;
-  }
+  return list;
+}
 
-  if (
-    intents.includes("transport") &&
-    worker.id === "mohit"
-  ) {
-    score += 45;
-  }
+function updateFilterCount() {
 
-  if (worker.available)
-    score += 4;
+  const f = getFilters();
 
-  if (worker.verified)
-    score += 3;
+  const n =
+    (currentCategory !== "all" ? 1 : 0) +
+    (f.minRating ? 1 : 0) +
+    (f.maxPrice < 1000 ? 1 : 0) +
+    (f.verified ? 1 : 0) +
+    (f.available ? 1 : 0);
 
-  return Math.min(
-    99,
-    Math.max(20, score)
+  const badge = $("#filterCount");
+  badge.textContent = n;
+  badge.classList.toggle("hidden", !n);
+
+  $("#priceValue").textContent = f.maxPrice < 1000 ? rupee(f.maxPrice) : "any";
+}
+
+function setCategory(cat) {
+
+  currentCategory = cat;
+
+  $("#categoryFilter").value = cat;
+
+  $$(".category").forEach(b =>
+    b.classList.toggle("active", b.dataset.category === cat)
   );
+}
+
+function resetAllFilters() {
+
+  searchInput.value = "";
+  $("#clearSearch").hidden = true;
+
+  setCategory("all");
+
+  $("#sortFilter").value = "recommended";
+  $("#ratingFilter").value = "0";
+  $("#priceFilter").value = "1000";
+  $("#verifiedFilter").checked = false;
+  $("#availableFilter").checked = false;
+
+  renderWorkers();
 }
 
 
@@ -705,183 +995,60 @@ function calculateMatch(worker, query) {
    RENDER WORKERS
    ========================================================= */
 
-let currentCategory = "all";
-
-function getVisibleWorkers() {
-
-  const query =
-    searchInput.value.trim();
-
-  const category =
-    document.getElementById(
-      "categoryFilter"
-    ).value;
-
-  const sort =
-    document.getElementById(
-      "sortFilter"
-    ).value;
-
-  const verifiedOnly =
-    document.getElementById(
-      "verifiedFilter"
-    ).checked;
-
-  const availableOnly =
-    document.getElementById(
-      "availableFilter"
-    ).checked;
-
-  let list =
-    Object.values(workers);
-
-  const selectedCategory =
-    currentCategory !== "all"
-      ? currentCategory
-      : category;
-
-  if (selectedCategory !== "all") {
-
-    list =
-      list.filter(
-        worker =>
-          worker.category ===
-          selectedCategory
-      );
-  }
-
-  if (query) {
-
-    list =
-      list
-        .map(worker => ({
-          worker,
-          match: calculateMatch(
-            worker,
-            query
-          )
-        }))
-        .filter(item =>
-          item.match >= 35
-        );
-
-  } else {
-
-    list =
-      list.map(worker => ({
-        worker,
-        match: 0
-      }));
-
-  }
-
-  if (verifiedOnly) {
-
-    list =
-      list.filter(
-        item => item.worker.verified
-      );
-  }
-
-  if (availableOnly) {
-
-    list =
-      list.filter(
-        item => item.worker.available
-      );
-  }
-
-  switch (sort) {
-
-    case "rating":
-
-      list.sort(
-        (a,b) =>
-          b.worker.rating -
-          a.worker.rating
-      );
-
-      break;
-
-    case "price":
-
-      list.sort(
-        (a,b) =>
-          a.worker.price -
-          b.worker.price
-      );
-
-      break;
-
-    case "distance":
-
-      list.sort(
-        (a,b) =>
-          a.worker.distance -
-          b.worker.distance
-      );
-
-      break;
-
-    case "jobs":
-
-      list.sort(
-        (a,b) =>
-          b.worker.jobs -
-          a.worker.jobs
-      );
-
-      break;
-
-    default:
-
-      list.sort(
-        (a,b) =>
-          b.match -
-          a.match
-      );
-  }
-
-  return list;
+function skeletonCard() {
+  return `
+    <div class="skeleton-card">
+      <div style="display:flex;gap:12px;margin-bottom:16px">
+        <div class="sk round"></div>
+        <div style="flex:1"><div class="sk w60"></div><div class="sk w80"></div></div>
+      </div>
+      <div class="sk w40"></div>
+      <div class="sk"></div>
+      <div class="sk w80"></div>
+    </div>`;
 }
 
-function renderWorkers() {
+function renderWorkers({ skeleton = false } = {}) {
 
-  const query =
-    searchInput.value.trim();
+  clearTimeout(skeletonTimer);
 
-  const list =
-    getVisibleWorkers();
+  const query = searchInput.value.trim();
+  const list = getVisibleWorkers();
+  const empty = $("#emptyWorkers");
+
+  $("#workerHeading").textContent = query ? t("best_matches") : t("recommended");
+
+  updateFilterCount();
+  updateSmartMatch(list, query);
+  renderMap(list);
+
+  if (skeleton) {
+
+    workerGrid.innerHTML = Array(6).fill(skeletonCard()).join("");
+    empty.classList.add("hidden");
+
+    skeletonTimer = setTimeout(() => renderWorkers(), prefersReducedMotion ? 0 : 600);
+    return;
+  }
 
   workerGrid.innerHTML = "";
 
   if (!list.length) {
-
-    document
-      .getElementById("emptyWorkers")
-      .classList.remove("hidden");
-
+    empty.classList.remove("hidden");
     return;
-
   }
 
-  document
-    .getElementById("emptyWorkers")
-    .classList.add("hidden");
+  empty.classList.add("hidden");
 
-  list.forEach(item => {
-
-    workerGrid.appendChild(
-      createWorkerCard(
-        item.worker,
-        item.match,
-        query
-      )
-    );
-
+  list.forEach((item, i) => {
+    workerGrid.appendChild(createWorkerCard(item.worker, item.match, query, i));
   });
 
-  updateSmartMatch(list, query);
+  requestAnimationFrame(() => {
+    $$(".match-bar i", workerGrid).forEach(bar => {
+      bar.style.width = `${bar.dataset.w}%`;
+    });
+  });
 }
 
 
@@ -889,124 +1056,77 @@ function renderWorkers() {
    WORKER CARD
    ========================================================= */
 
-function createWorkerCard(
-  worker,
-  match = 0,
-  query = ""
-) {
+function createWorkerCard(worker, match = 0, query = "", index = 0) {
 
-  const card =
-    document.createElement("article");
+  const card = document.createElement("article");
 
-  card.className =
-    "worker-card";
+  const isSaved = savedWorkers.includes(worker.id);
+  const inCompare = compare.includes(worker.id);
 
-  const isSaved =
-    savedWorkers.includes(
-      worker.id
-    );
+  card.className = `worker-card ${inCompare ? "in-compare" : ""}`;
+  card.dataset.id = worker.id;
+  card.style.setProperty("--i", Math.min(index, 11));
 
   card.innerHTML = `
 
-    <button
-      class="save-worker ${isSaved ? "saved" : ""}"
-      data-save="${worker.id}"
-      aria-label="Save worker"
-    >
-      ${isSaved ? "♥" : "♡"}
-    </button>
+    <div class="card-tools">
+
+      <button
+        class="compare-toggle ${inCompare ? "on" : ""}"
+        data-act="compare" data-id="${worker.id}"
+        aria-label="Compare ${esc(worker.name)}" title="Add to compare"
+      >${icon("compare")}</button>
+
+      <button
+        class="save-worker ${isSaved ? "saved" : ""}"
+        data-act="save" data-id="${worker.id}"
+        aria-label="${isSaved ? "Remove from saved" : "Save worker"}" title="Save"
+      >${icon("heart")}</button>
+
+    </div>
 
     <div class="worker-top">
 
-      <div class="worker-avatar">
-        ${worker.initials}
-      </div>
+      <div class="worker-avatar av-${worker.category}">${worker.initials}</div>
 
       <div class="worker-info">
-
-        <h4>${worker.name}</h4>
-
-        <p>${worker.role}</p>
-
-        ${
-          worker.verified
-            ? `
-              <span class="verified">
-                ✓ Verified worker
-              </span>
-            `
-            : ""
-        }
-
+        <h4>${esc(worker.name)}</h4>
+        <p>${esc(worker.role)}</p>
+        ${worker.verified ? `<span class="verified">${icon("shield")} Verified worker</span>` : ""}
       </div>
 
     </div>
 
     <div class="worker-meta">
-
-      <span>
-        ★ <strong>${worker.rating}</strong>
-      </span>
-
-      <span>
-        ${worker.jobs} jobs
-      </span>
-
-      <span>
-        ${worker.distance} km
-      </span>
-
+      <span>${icon("star")} <strong>${worker.rating}</strong></span>
+      <span>${worker.jobs} jobs</span>
+      <span>${worker.distance} km</span>
+      <span>~${worker.response} min reply</span>
     </div>
 
     <div class="worker-skills">
-
-      ${worker.skills
-        .slice(0,4)
-        .map(
-          skill =>
-            `<span class="skill">${skill}</span>`
-        )
-        .join("")}
-
+      ${worker.skills.slice(0, 4).map(s => `<span class="skill">${esc(s)}</span>`).join("")}
     </div>
 
-    ${
-      query
-        ? `
-          <div class="match-score">
-            <span>Problem match</span>
-            <strong>${match}% match</strong>
-          </div>
-        `
-        : ""
-    }
+    ${query ? `
+      <div class="match-score">
+        <div class="match-score-head">
+          <span>Problem match</span>
+          <strong>${match}% match</strong>
+        </div>
+        <div class="match-bar"><i data-w="${match}"></i></div>
+      </div>` : ""}
 
-    <div class="
-      availability
-      ${worker.available ? "" : "busy"}
-    ">
-
-      <span></span>
-
-      ${worker.availability}
-
+    <div class="card-foot">
+      <div class="availability ${worker.available ? "" : "busy"}">
+        <span></span>${esc(worker.availability)}
+      </div>
+      <div class="price-from">from <b>${rupee(worker.price)}</b></div>
     </div>
 
     <div class="worker-actions">
-
-      <button
-        data-profile="${worker.id}"
-      >
-        View profile
-      </button>
-
-      <button
-        class="primary"
-        data-request="${worker.id}"
-      >
-        Request
-      </button>
-
+      <button data-act="profile" data-id="${worker.id}">View profile</button>
+      <button class="primary" data-act="request" data-id="${worker.id}">Request</button>
     </div>
   `;
 
@@ -1018,262 +1138,655 @@ function createWorkerCard(
    SMART MATCH
    ========================================================= */
 
+const smartMatch = $("#smartMatch");
+
 function updateSmartMatch(list, query) {
 
   if (!query) {
-
     smartMatch.classList.add("hidden");
     return;
-
   }
 
-  const intents =
-    detectIntent(query);
+  const intents = detectIntent(query);
 
   smartMatch.classList.remove("hidden");
 
-  smartTitle.textContent =
+  $("#smartTitle").textContent =
     intents.length
-      ? `We understood: ${formatIntent(intents[0])}`
+      ? `We understood: ${INTENT_NAMES[intents[0]] || "local service"}`
       : "We found relevant local help";
 
-  smartDescription.textContent =
-    `KaamSetu matched your description with ${list.length} nearby worker${list.length === 1 ? "" : "s"}.`;
+  const best = list[0];
 
-  matchCount.textContent =
-    list.length;
-}
+  $("#smartDescription").textContent = list.length
+    ? `Best match: ${best.worker.name} (${best.match}%). ${list.length} nearby worker${list.length === 1 ? "" : "s"} can help.`
+    : "No workers match this yet — try other words, or post it as a job.";
 
-function formatIntent(intent) {
-
-  const names = {
-    wifi: "Wi-Fi / networking",
-    electrical: "electrical repair",
-    tailoring: "tailoring",
-    cctv: "CCTV / security",
-    ac: "AC & cooling",
-    education: "education",
-    transport: "local transport"
-  };
-
-  return names[intent] || "local service";
+  countTo($("#matchCount"), list.length, { dur: 450 });
 }
 
 
 /* =========================================================
-   SAVE WORKER
+   STATS + SERVICE TILES
    ========================================================= */
 
-document.addEventListener(
-  "click",
-  event => {
+function renderStats() {
 
-    const button =
-      event.target.closest(
-        "[data-save]"
-      );
+  const total = workerList.length;
+  const avail = workerList.filter(w => w.available).length;
+  const rating = workerList.reduce((s, w) => s + w.rating, 0) / total;
+  const resp = workerList.reduce((s, w) => s + w.response, 0) / total;
 
-    if (!button) return;
+  countTo($("#statWorkers"), total);
+  countTo($("#statAvailable"), avail);
+  countTo($("#statRating"), rating, { dec: 1 });
+  countTo($("#statResponse"), resp);
+}
 
-    const id =
-      button.dataset.save;
+const SERVICE_TILES = [
+  ["❄️", "AC repair", "AC not cooling"],
+  ["⚡", "Electrician", "fan not working"],
+  ["🚰", "Plumber", "tap is leaking"],
+  ["🧹", "Cleaning", "need sofa cleaning"],
+  ["🪚", "Carpenter", "door lock repair"],
+  ["🎨", "Painter", "paint my bedroom wall"],
+  ["📶", "Wi-Fi", "wifi keeps disconnecting"],
+  ["🧵", "Tailor", "need clothes stitching"],
+  ["🎓", "Tutor", "maths tutor for class 8"],
+  ["🚚", "Delivery", "pickup a parcel"],
+  ["🔧", "Mechanic", "bike puncture"],
+  ["💇", "Beauty", "haircut at home"]
+];
 
-    if (
-      savedWorkers.includes(id)
-    ) {
+function renderServiceTiles() {
+  $("#serviceTiles").innerHTML = SERVICE_TILES.map(([emoji, label, q]) => `
+    <button class="service-tile" data-act="quick" data-q="${esc(q)}">
+      <span class="emoji" aria-hidden="true">${emoji}</span>${esc(label)}
+    </button>
+  `).join("");
+}
 
-      savedWorkers =
-        savedWorkers.filter(
-          item => item !== id
-        );
 
-      addActivity(
-        "Removed saved worker",
-        `${workers[id].name} was removed from your saved workers.`,
-        "♡"
-      );
+/* =========================================================
+   SEARCH EVENTS, SUGGESTIONS, RECENT, VOICE
+   ========================================================= */
 
-    } else {
+const suggestionsEl = $("#suggestions");
+let sgIndex = -1;
 
-      savedWorkers.push(id);
+function hideSuggestions() {
+  suggestionsEl.classList.add("hidden");
+  searchInput.setAttribute("aria-expanded", "false");
+  sgIndex = -1;
+}
 
-      addActivity(
-        "Saved worker",
-        `${workers[id].name} was added to your saved workers.`,
-        "♥"
-      );
+function renderSuggestions() {
 
+  const q = normalize(searchInput.value);
+
+  let items, label, ic;
+
+  if (!q) {
+    items = recentSearches.slice(0, 5);
+    label = "RECENT";
+    ic = "clock";
+  } else {
+    const parts = q.split(" ");
+    items = SUGGESTIONS
+      .filter(s => parts.every(p => normalize(s).includes(p)))
+      .slice(0, 6);
+    label = "SUGGESTIONS";
+    ic = "search";
+  }
+
+  if (!items.length) { hideSuggestions(); return; }
+
+  suggestionsEl.innerHTML =
+    `<div class="sg-label">${label}</div>` +
+    items.map(s => `
+      <button type="button" role="option" data-act="pick" data-q="${esc(s)}">
+        ${icon(ic)} ${esc(s)}
+      </button>`).join("");
+
+  suggestionsEl.classList.remove("hidden");
+  searchInput.setAttribute("aria-expanded", "true");
+  sgIndex = -1;
+}
+
+function rememberSearch(q) {
+  q = q.trim();
+  if (!q) return;
+  recentSearches = [q, ...recentSearches.filter(x => x.toLowerCase() !== q.toLowerCase())].slice(0, 6);
+  save(STORAGE.recent, recentSearches);
+  renderRecent();
+}
+
+function renderRecent() {
+
+  const box = $("#recentSearches");
+
+  if (!recentSearches.length) {
+    box.classList.add("hidden");
+    return;
+  }
+
+  box.classList.remove("hidden");
+  box.innerHTML =
+    `<span>Recent:</span>` +
+    recentSearches.slice(0, 4).map(q =>
+      `<button data-act="quick" data-q="${esc(q)}">${icon("clock")} ${esc(q)}</button>`
+    ).join("") +
+    `<button class="link" data-act="clear-recent">Clear</button>`;
+}
+
+function performSearch() {
+
+  hideSuggestions();
+  rememberSearch(searchInput.value);
+  $("#clearSearch").hidden = !searchInput.value;
+
+  renderWorkers({ skeleton: !!searchInput.value.trim() });
+
+  $("#workersSection").scrollIntoView({
+    behavior: prefersReducedMotion ? "auto" : "smooth",
+    block: "start"
+  });
+}
+
+function runQuery(q) {
+  if (currentView !== "discover") showView("discover");
+  searchInput.value = q;
+  performSearch();
+}
+
+const liveSearch = debounce(() => renderWorkers(), 120);
+
+searchInput.addEventListener("input", () => {
+  $("#clearSearch").hidden = !searchInput.value;
+  renderSuggestions();
+  liveSearch();
+});
+
+searchInput.addEventListener("focus", renderSuggestions);
+
+searchInput.addEventListener("keydown", e => {
+
+  const items = $$("button", suggestionsEl);
+  const open = !suggestionsEl.classList.contains("hidden") && items.length;
+
+  if (e.key === "ArrowDown" && open) {
+    e.preventDefault();
+    sgIndex = (sgIndex + 1) % items.length;
+  } else if (e.key === "ArrowUp" && open) {
+    e.preventDefault();
+    sgIndex = (sgIndex - 1 + items.length) % items.length;
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    if (open && sgIndex >= 0) searchInput.value = items[sgIndex].dataset.q;
+    performSearch();
+    return;
+  } else if (e.key === "Escape") {
+    hideSuggestions();
+    return;
+  } else {
+    return;
+  }
+
+  items.forEach((b, i) => b.classList.toggle("active", i === sgIndex));
+});
+
+$("#searchButton").addEventListener("click", performSearch);
+
+$("#clearSearch").addEventListener("click", () => {
+  searchInput.value = "";
+  $("#clearSearch").hidden = true;
+  hideSuggestions();
+  renderWorkers();
+  searchInput.focus();
+});
+
+$$("[data-search]").forEach(button => {
+  button.addEventListener("click", () => runQuery(button.dataset.search));
+});
+
+/* voice search */
+
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const voiceButton = $("#voiceButton");
+
+if (!SpeechRec) {
+
+  voiceButton.hidden = true;
+
+} else {
+
+  let rec = null;
+
+  voiceButton.addEventListener("click", () => {
+
+    if (rec) { rec.stop(); return; }
+
+    rec = new SpeechRec();
+    rec.lang = VOICE_LANG[settings.lang] || "en-IN";
+    rec.interimResults = false;
+
+    voiceButton.classList.add("listening");
+    toast("Listening… describe your problem", { icon: "mic" });
+
+    rec.onresult = e => {
+      searchInput.value = e.results[0][0].transcript;
+      performSearch();
+    };
+
+    rec.onerror = () => toast("Couldn't hear that — please try again.", { type: "warn", icon: "mic" });
+
+    rec.onend = () => {
+      voiceButton.classList.remove("listening");
+      rec = null;
+    };
+
+    rec.start();
+  });
+}
+
+
+/* =========================================================
+   FILTER CONTROLS
+   ========================================================= */
+
+$("#filterButton").addEventListener("click", () => {
+  const panel = $("#filtersPanel");
+  panel.classList.toggle("hidden");
+  $("#filterButton").setAttribute("aria-expanded", String(!panel.classList.contains("hidden")));
+});
+
+$("#categoryFilter").addEventListener("change", e => {
+  setCategory(e.target.value);
+  renderWorkers();
+});
+
+["sortFilter", "ratingFilter", "priceFilter", "verifiedFilter", "availableFilter"].forEach(id => {
+  $(`#${id}`).addEventListener("input", () => renderWorkers());
+});
+
+$$(".category").forEach(button => {
+  button.addEventListener("click", () => {
+    setCategory(button.dataset.category);
+    renderWorkers();
+  });
+});
+
+$("#resetFilters").addEventListener("click", resetAllFilters);
+$("#resetFiltersPanel").addEventListener("click", resetAllFilters);
+
+$("#postFromSearch").addEventListener("click", () => {
+  const q = searchInput.value.trim();
+  showView("jobs");
+  openJobModal(q ? { title: q.charAt(0).toUpperCase() + q.slice(1), category: guessCategory(q) } : {});
+});
+
+
+/* =========================================================
+   MAP
+   ========================================================= */
+
+const mapViewport = $("#mapViewport");
+const mapStage = $("#mapStage");
+const mapPins = $("#mapPins");
+const mapPopup = $("#mapPopup");
+
+let mapZ = 1, mapX = 0, mapY = 0;
+let selectedPin = null;
+let lastPinKey = "";
+
+function applyMap() {
+  mapStage.style.transform = `translate(${mapX}px, ${mapY}px) scale(${mapZ})`;
+  mapStage.style.setProperty("--z", mapZ);
+}
+
+function clampMap() {
+  const r = mapViewport.getBoundingClientRect();
+  const mx = (mapZ - 1) * r.width / 2 + 40;
+  const my = (mapZ - 1) * r.height / 2 + 40;
+  mapX = Math.max(-mx, Math.min(mx, mapX));
+  mapY = Math.max(-my, Math.min(my, mapY));
+}
+
+function renderMap(list) {
+
+  const key = list.map(i => i.worker.id).join(",") + "|" + selectedPin;
+  if (key === lastPinKey) return;
+  lastPinKey = key;
+
+  mapPins.innerHTML = list.map((item, i) => {
+    const w = item.worker;
+    return `
+      <button
+        class="map-pin pin-${w.category} ${w.available ? "free" : "busy"} ${selectedPin === w.id ? "sel" : ""}"
+        style="left:${w.pos.x}%; top:${w.pos.y}%; --i:${i}"
+        data-act="pin" data-id="${w.id}" data-worker="${w.id}"
+        title="${esc(w.name)} · ${esc(w.role)}" aria-label="${esc(w.name)}, ${esc(w.role)}"
+      ><span>${w.initials}</span></button>`;
+  }).join("");
+
+  if (selectedPin && !list.some(i => i.worker.id === selectedPin)) closePopup();
+}
+
+function selectPin(id) {
+
+  selectedPin = id;
+  const w = workers[id];
+
+  $$(".map-pin", mapPins).forEach(p => p.classList.toggle("sel", p.dataset.id === id));
+
+  mapPopup.innerHTML = `
+    <button class="ghost-btn mp-close" data-act="close-popup" aria-label="Close">${icon("x")}</button>
+    <div class="mp-top">
+      <div class="worker-avatar av-${w.category}">${w.initials}</div>
+      <div>
+        <h4>${esc(w.name)}</h4>
+        <p>${esc(w.role)}</p>
+      </div>
+    </div>
+    <div class="mp-meta">
+      <span>★ ${w.rating}</span>
+      <span>${w.distance} km</span>
+      <span>from ${rupee(w.price)}</span>
+    </div>
+    <div class="mp-actions">
+      <button class="secondary-btn" data-act="profile" data-id="${w.id}">Profile</button>
+      <button class="primary-btn" data-act="request" data-id="${w.id}">Request</button>
+    </div>
+  `;
+
+  mapPopup.classList.remove("hidden");
+}
+
+function closePopup() {
+  selectedPin = null;
+  mapPopup.classList.add("hidden");
+  $$(".map-pin.sel", mapPins).forEach(p => p.classList.remove("sel"));
+}
+
+/* drag to pan */
+
+let drag = null;
+
+mapViewport.addEventListener("pointerdown", e => {
+  if (e.target.closest("button, .map-popup")) return;
+  drag = { x: e.clientX, y: e.clientY, ox: mapX, oy: mapY };
+  mapViewport.classList.add("dragging");
+  mapViewport.setPointerCapture(e.pointerId);
+});
+
+mapViewport.addEventListener("pointermove", e => {
+  if (!drag) return;
+  mapX = drag.ox + e.clientX - drag.x;
+  mapY = drag.oy + e.clientY - drag.y;
+  clampMap();
+  applyMap();
+});
+
+["pointerup", "pointercancel"].forEach(ev => {
+  mapViewport.addEventListener(ev, () => {
+    drag = null;
+    mapViewport.classList.remove("dragging");
+  });
+});
+
+$("#zoomIn").addEventListener("click", () => {
+  mapZ = Math.min(2, mapZ + 0.25);
+  clampMap();
+  applyMap();
+});
+
+$("#zoomOut").addEventListener("click", () => {
+  mapZ = Math.max(1, mapZ - 0.25);
+  clampMap();
+  applyMap();
+});
+
+$("#centerMap").addEventListener("click", () => {
+  mapZ = 1; mapX = 0; mapY = 0;
+  applyMap();
+  const me = $(".user-location");
+  me.classList.remove("ping");
+  void me.offsetWidth;
+  me.classList.add("ping");
+});
+
+function setCityAreas() {
+  const [a, b, c] = CITIES[settings.city];
+  $("#areaOne").textContent = a;
+  $("#areaTwo").textContent = b;
+  $("#areaThree").textContent = c;
+  $("#locationLabel").textContent = settings.city;
+}
+
+// hovering a card highlights its pin
+document.addEventListener("mouseover", e => {
+  const card = e.target.closest(".worker-card");
+  $$(".map-pin.hl", mapPins).forEach(p => p.classList.remove("hl"));
+  if (card) mapPins.querySelector(`[data-id="${card.dataset.id}"]`)?.classList.add("hl");
+});
+
+
+/* =========================================================
+   SAVE / COMPARE
+   ========================================================= */
+
+function toggleSave(id) {
+
+  const w = workers[id];
+
+  if (savedWorkers.includes(id)) {
+
+    savedWorkers = savedWorkers.filter(x => x !== id);
+    addActivity("Removed saved worker", `${w.name} was removed from your saved workers.`, "heart");
+    toast(`${w.name} removed from saved`, { icon: "heart" });
+
+  } else {
+
+    savedWorkers.push(id);
+    addActivity("Saved worker", `${w.name} was added to your saved workers.`, "heart");
+    toast(`${w.name} saved`, { type: "success", icon: "heart" });
+  }
+
+  save(STORAGE.saved, savedWorkers);
+
+  $$(`.save-worker[data-id="${id}"]`).forEach(btn =>
+    btn.classList.toggle("saved", savedWorkers.includes(id))
+  );
+
+  updateBadge();
+
+  if (currentView === "saved") renderSaved();
+}
+
+let compare = [];
+
+function toggleCompare(id) {
+
+  if (compare.includes(id)) {
+    compare = compare.filter(x => x !== id);
+  } else {
+    if (compare.length >= 3) {
+      toast("You can compare up to 3 workers.", { type: "warn", icon: "compare" });
+      return;
+    }
+    compare.push(id);
+  }
+
+  $$(".worker-card").forEach(card => {
+    const on = compare.includes(card.dataset.id);
+    card.classList.toggle("in-compare", on);
+    card.querySelector(".compare-toggle")?.classList.toggle("on", on);
+  });
+
+  renderCompareBar();
+}
+
+function renderCompareBar() {
+
+  const bar = $("#compareBar");
+
+  bar.classList.toggle("hidden", !compare.length);
+
+  $("#compareChips").innerHTML = compare.map(id => `
+    <span class="compare-chip">
+      ${esc(workers[id].name)}
+      <button data-act="compare" data-id="${id}" aria-label="Remove ${esc(workers[id].name)}">${icon("x")}</button>
+    </span>`).join("");
+}
+
+function openCompare() {
+
+  if (compare.length < 2) {
+    toast("Pick at least 2 workers to compare.", { type: "warn", icon: "compare" });
+    return;
+  }
+
+  const list = compare.map(id => workers[id]);
+
+  const rows = [
+    ["Rating", w => `★ ${w.rating}`, w => w.rating, "max"],
+    ["Jobs done", w => w.jobs, w => w.jobs, "max"],
+    ["Starting price", w => rupee(w.price), w => w.price, "min"],
+    ["Distance", w => `${w.distance} km`, w => w.distance, "min"],
+    ["Replies in", w => `~${w.response} min`, w => w.response, "min"],
+    ["Experience", w => w.experience],
+    ["Verified", w => (w.verified ? "Yes" : "No")],
+    ["Availability", w => w.availability],
+    ["Working hours", w => w.hours]
+  ];
+
+  const body = rows.map(([label, show, val, mode]) => {
+
+    let best = null;
+    if (val) {
+      const nums = list.map(val);
+      best = mode === "max" ? Math.max(...nums) : Math.min(...nums);
     }
 
-    save(
-      STORAGE.saved,
-      savedWorkers
-    );
+    return `<tr><th>${label}</th>${list.map(w =>
+      `<td class="${val && val(w) === best ? "best" : ""}">${esc(show(w))}</td>`
+    ).join("")}</tr>`;
+  }).join("");
 
-    renderWorkers();
-    renderSaved();
+  $("#compareContent").innerHTML = `
+    <div class="table-scroll">
+      <table class="compare-table">
+        <tr>
+          <th></th>
+          ${list.map(w => `
+            <td><div class="ct-head">
+              <div class="worker-avatar av-${w.category}">${w.initials}</div>${esc(w.name)}
+            </div></td>`).join("")}
+        </tr>
+        ${body}
+        <tr>
+          <th></th>
+          ${list.map(w => `<td><button class="primary-btn" data-act="request" data-id="${w.id}">Request</button></td>`).join("")}
+        </tr>
+      </table>
+    </div>`;
 
-  }
-);
+  openModal("compareModal");
+}
+
+$("#openCompare").addEventListener("click", openCompare);
+
+$("#clearCompare").addEventListener("click", () => {
+  compare = [];
+  $$(".worker-card").forEach(c => {
+    c.classList.remove("in-compare");
+    c.querySelector(".compare-toggle")?.classList.remove("on");
+  });
+  renderCompareBar();
+});
 
 
 /* =========================================================
    PROFILE MODAL
    ========================================================= */
 
-document.addEventListener(
-  "click",
-  event => {
-
-    const button =
-      event.target.closest(
-        "[data-profile]"
-      );
-
-    if (!button) return;
-
-    openProfile(
-      button.dataset.profile
-    );
-
-  }
-);
-
 function openProfile(id) {
 
-  const worker =
-    workers[id];
+  const w = workers[id];
+  if (!w) return;
 
-  const modal =
-    document.getElementById(
-      "profileModal"
-    );
-
-  const content =
-    document.getElementById(
-      "profileContent"
-    );
-
-  content.innerHTML = `
+  $("#profileContent").innerHTML = `
 
     <div class="profile-cover"></div>
 
     <div class="profile-main">
 
-      <div class="profile-big-avatar">
-        ${worker.initials}
-      </div>
+      <div class="profile-big-avatar av-${w.category}">${w.initials}</div>
 
-      <h2>${worker.name}</h2>
-
-      <div class="profile-role">
-        ${worker.role}
-      </div>
+      <h2>${esc(w.name)}</h2>
+      <div class="profile-role">${esc(w.role)}</div>
 
       <div class="profile-badges">
-
-        ${
-          worker.verified
-            ? `<span class="badge">✓ Verified</span>`
-            : ""
-        }
-
-        <span class="badge">
-          ★ ${worker.rating}
-        </span>
-
-        <span class="badge">
-          ${worker.experience} experience
-        </span>
-
+        ${w.verified ? `<span class="badge">${icon("shield")} Verified</span>` : ""}
+        <span class="badge">${icon("star")} ${w.rating}</span>
+        <span class="badge neutral">${esc(w.experience)} experience</span>
+        <span class="badge neutral">${esc(w.availability)}</span>
       </div>
 
     </div>
 
     <div class="profile-stats">
-
-      <div class="profile-stat">
-        <strong>${worker.jobs}</strong>
-        <span>Jobs</span>
-      </div>
-
-      <div class="profile-stat">
-        <strong>₹${worker.price}</strong>
-        <span>Starting</span>
-      </div>
-
-      <div class="profile-stat">
-        <strong>${worker.distance} km</strong>
-        <span>Nearby</span>
-      </div>
-
+      <div class="profile-stat"><strong>${w.jobs}</strong><span>Jobs</span></div>
+      <div class="profile-stat"><strong>${rupee(w.price)}</strong><span>Starting</span></div>
+      <div class="profile-stat"><strong>${w.distance} km</strong><span>Away</span></div>
+      <div class="profile-stat"><strong>~${w.response}m</strong><span>Reply</span></div>
     </div>
 
     <div class="profile-section">
-
       <h4>About</h4>
-
-      <p class="profile-bio">
-        ${worker.bio}
+      <p class="profile-bio">${esc(w.bio)}</p>
+      <p class="profile-bio" style="margin-top:8px">
+        ${icon("clock")} ${esc(w.hours)} &nbsp;·&nbsp; ${icon("chat")} ${esc(w.languages)}
       </p>
-
     </div>
 
     <div class="profile-section">
-
       <h4>Skills</h4>
-
       <div class="worker-skills">
-
-        ${worker.skills
-          .map(
-            skill =>
-              `<span class="skill">${skill}</span>`
-          )
-          .join("")}
-
+        ${w.skills.map(s => `<span class="skill">${esc(s)}</span>`).join("")}
       </div>
-
     </div>
 
     <div class="profile-section">
+      <h4>Services &amp; prices</h4>
+      <div class="service-list">
+        ${w.services.map((s, i) => `
+          <div class="service-row">
+            <b>${esc(s.name)}</b>
+            <em>${rupee(s.price)}</em>
+            <button data-act="request" data-id="${w.id}" data-service="${i}">Book</button>
+          </div>`).join("")}
+      </div>
+    </div>
 
+    <div class="profile-section">
       <h4>Recent reviews</h4>
-
-      ${worker.reviews
-        .map(
-          review => `
-            <div class="review">
-              <strong>${review.name} · ★★★★★</strong>
-              <p>${review.text}</p>
-            </div>
-          `
-        )
-        .join("")}
-
+      ${w.reviews.slice(0, 6).map(r => `
+        <div class="review">
+          <strong>${esc(r.name)} ${starsHTML(r.rating ?? 5)}</strong>
+          ${r.tags?.length ? `<div class="tags">${r.tags.map(tg => `<span>${esc(tg)}</span>`).join("")}</div>` : ""}
+          ${r.text ? `<p>${esc(r.text)}</p>` : ""}
+        </div>`).join("")}
     </div>
 
     <div class="profile-actions">
-
-      <button
-        class="primary-btn"
-        data-request="${worker.id}"
-      >
-        Request worker
-      </button>
-
-      <button
-        class="primary-btn"
-        data-chat="${worker.id}"
-      >
-        Message
-      </button>
-
+      <button class="primary-btn" data-act="request" data-id="${w.id}">Request worker</button>
+      <button class="secondary-btn" data-act="chat" data-id="${w.id}">Message</button>
+      <button class="icon-only" data-act="share" data-id="${w.id}" aria-label="Share profile" title="Share profile">${icon("share")}</button>
     </div>
-
   `;
 
-  modal.classList.remove("hidden");
+  openModal("profileModal");
 }
 
 
@@ -1281,411 +1794,376 @@ function openProfile(id) {
    REQUEST MODAL
    ========================================================= */
 
-document.addEventListener(
-  "click",
-  event => {
-
-    const button =
-      event.target.closest(
-        "[data-request]"
-      );
-
-    if (!button) return;
-
-    const workerId =
-      button.dataset.request;
-
-    openRequestModal(workerId);
-
+function dateOptions() {
+  const out = [];
+  for (let d = 0; d < 5; d++) {
+    const date = new Date();
+    date.setDate(date.getDate() + d);
+    const label = date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+    out.push(d === 0 ? `Today · ${label}` : d === 1 ? `Tomorrow · ${label}` : label);
   }
-);
-
-function openRequestModal(id) {
-
-  const worker =
-    workers[id];
-
-  document.getElementById(
-    "requestWorkerId"
-  ).value = id;
-
-  document.getElementById(
-    "requestWorkerName"
-  ).textContent =
-    `Request ${worker.name}`;
-
-  document.getElementById(
-    "requestDescription"
-  ).value =
-    searchInput.value || "";
-
-  document.getElementById(
-    "requestModal"
-  ).classList.remove("hidden");
-
+  return out;
 }
 
+function openRequestModal(id, serviceIdx = 0, prefill) {
 
-/* =========================================================
-   REQUEST SUBMIT
-   ========================================================= */
+  const w = workers[id];
+  if (!w) return;
 
-document
-  .getElementById("requestForm")
-  .addEventListener(
-    "submit",
-    event => {
+  closeAllModals();
 
-      event.preventDefault();
+  $("#requestWorkerId").value = id;
+  $("#requestWorkerName").textContent = `Request ${w.name}`;
 
-      const workerId =
-        document.getElementById(
-          "requestWorkerId"
-        ).value;
+  $("#requestService").innerHTML = w.services.map((s, i) =>
+    `<option value="${i}" ${i === Number(serviceIdx) ? "selected" : ""}>${esc(s.name)} — ${rupee(s.price)}</option>`
+  ).join("");
 
-      const worker =
-        workers[workerId];
+  $("#requestDescription").value = prefill ?? searchInput.value ?? "";
+  $("#requestDate").innerHTML = dateOptions().map(d => `<option>${esc(d)}</option>`).join("");
+  $("#requestAddress").value = settings.address || "";
+  $("#emergencyRequest").checked = false;
+  $("#requestPhoto").value = "";
+  $("#photoPreview").classList.add("hidden");
 
-      const description =
-        document.getElementById(
-          "requestDescription"
-        ).value;
+  const notice = $("#requestNotice");
+  if (!w.available) {
+    notice.textContent = `${w.name} is busy right now (${w.availability.toLowerCase()}). Your request will be queued.`;
+    notice.classList.remove("hidden");
+  } else {
+    notice.classList.add("hidden");
+  }
 
-      const time =
-        document.getElementById(
-          "requestTime"
-        ).value;
+  updateEstimate();
+  openModal("requestModal");
+}
 
-      const emergency =
-        document.getElementById(
-          "emergencyRequest"
-        ).checked;
+function updateEstimate() {
 
-      const request = {
+  const w = workers[$("#requestWorkerId").value];
+  if (!w) return;
 
-        id:
-          Date.now().toString(),
+  const svc = w.services[Number($("#requestService").value)] || w.services[0];
+  const fee = $("#emergencyRequest").checked ? 100 : 0;
 
-        workerId,
+  $("#requestEstimate").innerHTML = `
+    <div class="est-row"><span>${esc(svc.name)}</span><span>${rupee(svc.price)}</span></div>
+    ${fee ? `<div class="est-row"><span>Emergency priority fee</span><span>${rupee(fee)}</span></div>` : ""}
+    <div class="est-row est-total"><span>Estimated total</span><span>${rupee(svc.price + fee)}</span></div>
+    <div class="est-row" style="font-size:12px;margin-top:4px"><span>Final price is confirmed by the worker after seeing the job.</span></div>
+  `;
+}
 
-        description,
+$("#requestService").addEventListener("change", updateEstimate);
+$("#emergencyRequest").addEventListener("change", updateEstimate);
 
-        time,
-
-        emergency,
-
-        status: "sent",
-
-        createdAt:
-          new Date().toISOString()
-
+function readPhoto(file) {
+  return new Promise(resolve => {
+    if (!file) return resolve(null);
+    const fr = new FileReader();
+    fr.onerror = () => resolve(null);
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = () => resolve(null);
+      img.onload = () => {
+        const scale = Math.min(1, 320 / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL("image/jpeg", 0.7));
       };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
 
-      requests.unshift(request);
+$("#requestPhoto").addEventListener("change", async e => {
+  const data = await readPhoto(e.target.files[0]);
+  const prev = $("#photoPreview");
+  if (data) { prev.src = data; prev.classList.remove("hidden"); }
+  else prev.classList.add("hidden");
+});
 
-      save(
-        STORAGE.requests,
-        requests
-      );
+$("#requestForm").addEventListener("submit", async event => {
 
-      addActivity(
-        emergency
-          ? "Emergency request sent"
-          : "Request sent",
-        `Your request was sent to ${worker.name}.`,
-        emergency ? "!" : "✓"
-      );
+  event.preventDefault();
 
-      closeModal("requestModal");
+  const workerId = $("#requestWorkerId").value;
+  const w = workers[workerId];
+  const svc = w.services[Number($("#requestService").value)] || w.services[0];
+  const emergency = $("#emergencyRequest").checked;
+  const address = $("#requestAddress").value.trim();
 
-      document
-        .getElementById("requestForm")
-        .reset();
+  const photo = await readPhoto($("#requestPhoto").files[0]);
 
-      updateBadge();
+  const request = {
+    id: Date.now().toString(),
+    workerId,
+    service: svc.name,
+    price: svc.price,
+    fee: emergency ? 100 : 0,
+    description: $("#requestDescription").value.trim(),
+    date: $("#requestDate").value,
+    time: $("#requestTime").value,
+    address,
+    photo,
+    emergency,
+    status: "sent",
+    otp: String(Math.floor(1000 + Math.random() * 9000)),
+    paid: false,
+    reviewed: false,
+    createdAt: new Date().toISOString()
+  };
 
-      showView("requests");
+  requests.unshift(request);
+  save(STORAGE.requests, requests);
 
-    }
+  settings.address = address;
+  save(STORAGE.settings, settings);
+
+  addActivity(
+    emergency ? "Emergency request sent" : "Request sent",
+    `Your request for “${svc.name}” was sent to ${w.name}.`,
+    emergency ? "bolt" : "check"
   );
+
+  closeAllModals();
+  $("#requestForm").reset();
+
+  updateBadge();
+  showView("requests");
+
+  toast(`Request sent to ${w.name}`, { type: "success", icon: "send" });
+
+  scheduleAutoAccept(request.id);
+});
 
 
 /* =========================================================
    REQUEST STATUS
    ========================================================= */
 
-const statusFlow = [
-  "sent",
-  "accepted",
-  "onway",
-  "progress",
-  "completed"
-];
+const statusFlow = ["sent", "accepted", "onway", "progress", "completed"];
 
 const statusNames = {
   sent: "Request sent",
   accepted: "Accepted",
   onway: "On the way",
   progress: "In progress",
-  completed: "Completed"
+  completed: "Completed",
+  cancelled: "Cancelled"
 };
 
-function getStatusIndex(status) {
+const progressLabels = ["Sent", "Accepted", "On the way", "In progress", "Completed"];
 
-  return statusFlow.indexOf(
-    status
+const getStatusIndex = s => statusFlow.indexOf(s);
+
+const fillMap = {};
+
+function setStatus(request, status) {
+
+  request.status = status;
+  save(STORAGE.requests, requests);
+
+  const w = workers[request.workerId];
+
+  addActivity(
+    "Request updated",
+    `${w.name}: ${statusNames[status]}.`,
+    status === "completed" ? "check" : "activity"
   );
+
+  updateBadge();
+  if (currentView === "requests") renderRequests(false);
 }
 
 function advanceRequest(id) {
 
-  const request =
-    requests.find(
-      item => item.id === id
-    );
-
+  const request = requests.find(r => r.id === id);
   if (!request) return;
 
-  const index =
-    getStatusIndex(
-      request.status
-    );
+  const index = getStatusIndex(request.status);
+  if (index < 0 || index >= statusFlow.length - 1) return;
 
-  if (
-    index <
-    statusFlow.length - 1
-  ) {
+  const next = statusFlow[index + 1];
+  setStatus(request, next);
 
-    request.status =
-      statusFlow[index + 1];
+  const w = workers[request.workerId];
 
-    save(
-      STORAGE.requests,
-      requests
-    );
-
-    const worker =
-      workers[request.workerId];
-
-    addActivity(
-      "Request updated",
-      `${worker.name}: ${statusNames[request.status]}.`,
-      "↗"
-    );
-
-    renderRequests();
+  if (next === "onway") {
+    toast(`${w.name} is on the way — share OTP ${request.otp} on arrival`, { icon: "pin" });
+  } else if (next === "completed") {
+    toast("Job completed! You can pay and leave a review.", { type: "success", icon: "check" });
   }
-
 }
 
-function renderRequests() {
+function scheduleAutoAccept(id) {
 
-  requestsList.innerHTML = "";
+  const request = requests.find(r => r.id === id);
+  if (!request) return;
 
-  if (!requests.length) {
+  setTimeout(() => {
+    const r = requests.find(x => x.id === id);
+    if (r && r.status === "sent") {
+      setStatus(r, "accepted");
+      toast(`${workers[r.workerId].name} accepted your request`, { type: "success", icon: "check" });
+    }
+  }, request.emergency ? 2500 : 5000);
+}
 
-    document
-      .getElementById("emptyRequests")
-      .classList.remove("hidden");
+function cancelRequest(id) {
 
+  const r = requests.find(x => x.id === id);
+  if (!r || r.status === "completed" || r.status === "cancelled") return;
+
+  const previous = r.status;
+  setStatus(r, "cancelled");
+
+  toast("Request cancelled", {
+    icon: "x",
+    action: {
+      label: "Undo",
+      fn: () => { r.status = previous; save(STORAGE.requests, requests); updateBadge(); renderRequests(false); }
+    }
+  });
+}
+
+let requestFilter = "all";
+
+function matchesFilter(r) {
+  const finished = r.status === "completed" || r.status === "cancelled";
+  return requestFilter === "all" || (requestFilter === "active" ? !finished : finished);
+}
+
+function requestCardHTML(r) {
+
+  const w = workers[r.workerId];
+  const cancelled = r.status === "cancelled";
+  const done = r.status === "completed";
+  const cur = getStatusIndex(r.status);
+  const price = (r.price ?? w.price) + (r.fee || 0);
+  const serviceIndex = Math.max(0, w.services.findIndex(s => s.name === r.service));
+
+  const statusClass = done ? "completed" : cancelled ? "cancelled" : "";
+
+  return `
+
+    <div class="request-card-top">
+
+      <div class="request-worker">
+        <div class="worker-avatar av-${w.category}">${w.initials}</div>
+        <div>
+          <h4>${esc(w.name)}</h4>
+          <p>${esc(w.role)}</p>
+        </div>
+      </div>
+
+      <div class="badges">
+        ${r.emergency ? `<span class="status-badge emergency">${icon("bolt")} Emergency</span>` : ""}
+        <span class="status-badge ${statusClass}">${statusNames[r.status]}</span>
+        ${r.paid ? `<span class="status-badge paid">Paid</span>` : ""}
+      </div>
+
+    </div>
+
+    <div class="req-service">${esc(r.service || "General help")}</div>
+    <p class="request-description">${esc(r.description)}</p>
+
+    <div class="req-details">
+      <span>${icon("calendar")} <b>${esc(r.date || "Flexible")}</b> · ${esc(r.time || "")}</span>
+      ${r.address ? `<span>${icon("pin")} ${esc(r.address)}</span>` : ""}
+      <span>${rupee(price)}${r.tip ? ` + ${rupee(r.tip)} tip` : ""}</span>
+    </div>
+
+    ${r.photo ? `<img class="req-photo" src="${r.photo}" alt="Attached photo">` : ""}
+
+    ${(r.status === "accepted" || r.status === "onway") && r.otp ? `
+      <div class="otp-box">
+        <span>Share this code with the worker when they arrive:</span>
+        <strong>${esc(r.otp)}</strong>
+      </div>` : ""}
+
+    ${cancelled ? "" : `
+      <div class="progress" style="--fill:${fillMap[r.id] ?? (cur / 4) * 80}%" data-fill="${(cur / 4) * 80}">
+        ${progressLabels.map((label, i) => `
+          <div class="progress-step ${cur >= i ? "active" : ""} ${cur === i && !done ? "current" : ""}">${label}</div>
+        `).join("")}
+      </div>`}
+
+    <div class="request-actions" style="${cancelled ? "margin-top:14px" : ""}">
+
+      ${!done && !cancelled ? `
+        <button data-act="advance" data-id="${r.id}">${icon("activity")} Simulate next update</button>
+        <button class="danger" data-act="cancel" data-id="${r.id}">Cancel</button>` : ""}
+
+      ${done && !r.paid ? `<button class="pay" data-act="pay" data-id="${r.id}">Pay ${rupee(price)}</button>` : ""}
+      ${done && !r.reviewed ? `<button data-act="review" data-id="${r.id}">${icon("star")} Leave review</button>` : ""}
+      ${done || cancelled ? `<button data-act="request" data-id="${r.workerId}" data-service="${serviceIndex}">Book again</button>` : ""}
+
+      <button data-act="chat" data-id="${r.workerId}">${icon("chat")} Message</button>
+
+    </div>
+  `;
+}
+
+function renderRequests(animate = true) {
+
+  const list = $("#requestsList");
+  const empty = $("#emptyRequests");
+
+  list.innerHTML = "";
+
+  const shown = requests.filter(matchesFilter);
+
+  if (!shown.length) {
+    empty.classList.remove("hidden");
     updateBadge();
-
     return;
-
   }
 
-  document
-    .getElementById("emptyRequests")
-    .classList.add("hidden");
+  empty.classList.add("hidden");
 
-  requests.forEach(request => {
+  shown.forEach((r, i) => {
 
-    const worker =
-      workers[request.workerId];
+    if (!workers[r.workerId]) return;
 
-    const card =
-      document.createElement("article");
+    const card = document.createElement("article");
+    card.className = "request-card";
+    card.style.setProperty("--i", Math.min(i, 8));
+    if (!animate) card.style.animation = "none";
+    card.innerHTML = requestCardHTML(r);
+    list.appendChild(card);
 
-    card.className =
-      "request-card";
-
-    const current =
-      getStatusIndex(
-        request.status
-      );
-
-    card.innerHTML = `
-
-      <div class="request-card-top">
-
-        <div class="request-worker">
-
-          <div class="worker-avatar">
-            ${worker.initials}
-          </div>
-
-          <div>
-
-            <h4>${worker.name}</h4>
-
-            <p>${worker.role}</p>
-
-          </div>
-
-        </div>
-
-        <span class="
-          status-badge
-          ${request.status === "completed" ? "completed" : ""}
-          ${request.emergency ? "emergency" : ""}
-        ">
-
-          ${
-            request.emergency
-              ? "Emergency"
-              : statusNames[request.status]
-          }
-
-        </span>
-
-      </div>
-
-      <p class="request-description">
-        ${request.description}
-      </p>
-
-      <div class="progress">
-
-        ${[
-          ["sent","Sent"],
-          ["accepted","Accepted"],
-          ["onway","On the way"],
-          ["completed","Completed"]
-        ]
-        .map(([key,label],index) => {
-
-          return `
-            <div class="
-              progress-step
-              ${current >= index ? "active" : ""}
-            ">
-              ${label}
-            </div>
-          `;
-
-        })
-        .join("")}
-
-      </div>
-
-      <div class="request-actions">
-
-        ${
-          request.status !== "completed"
-            ? `
-              <button
-                data-advance="${request.id}"
-              >
-                Simulate next update
-              </button>
-            `
-            : `
-              <button
-                data-payment="${request.workerId}"
-              >
-                Pay ₹${worker.price}
-              </button>
-
-              <button
-                data-review="${request.workerId}"
-              >
-                Leave review
-              </button>
-            `
-        }
-
-        <button
-          data-chat="${request.workerId}"
-        >
-          Message
-        </button>
-
-      </div>
-    `;
-
-    requestsList.appendChild(card);
-
+    // animate the progress line from its old position to the new one
+    const bar = $(".progress", card);
+    if (bar) {
+      const target = bar.dataset.fill;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        bar.style.setProperty("--fill", `${target}%`);
+      }));
+      fillMap[r.id] = Number(target);
+    }
   });
 
   updateBadge();
 }
 
+$$("[data-rfilter]").forEach(tab => {
+  tab.addEventListener("click", () => {
+    requestFilter = tab.dataset.rfilter;
+    $$("[data-rfilter]").forEach(t => t.classList.toggle("active", t === tab));
+    renderRequests();
+  });
+});
 
-/* =========================================================
-   REQUEST EVENTS
-   ========================================================= */
+$("#newRequestButton").addEventListener("click", () => {
+  showView("discover");
+  setTimeout(() => searchInput.focus(), 350);
+});
 
-document.addEventListener(
-  "click",
-  event => {
-
-    const advance =
-      event.target.closest(
-        "[data-advance]"
-      );
-
-    if (advance) {
-
-      advanceRequest(
-        advance.dataset.advance
-      );
-
-      return;
-    }
-
-    const payment =
-      event.target.closest(
-        "[data-payment]"
-      );
-
-    if (payment) {
-
-      openPayment(
-        payment.dataset.payment
-      );
-
-      return;
-    }
-
-    const review =
-      event.target.closest(
-        "[data-review]"
-      );
-
-    if (review) {
-
-      leaveReview(
-        review.dataset.review
-      );
-
-      return;
-    }
-
-    const chat =
-      event.target.closest(
-        "[data-chat]"
-      );
-
-    if (chat) {
-
-      openChat(
-        chat.dataset.chat
-      );
-
-    }
-
-  }
-);
+$("#discoverFromRequests").addEventListener("click", () => showView("discover"));
 
 
 /* =========================================================
@@ -1694,124 +2172,118 @@ document.addEventListener(
 
 function renderSaved() {
 
-  savedGrid.innerHTML = "";
+  const grid = $("#savedGrid");
+  grid.innerHTML = "";
 
-  const list =
-    savedWorkers
-      .map(id => workers[id])
-      .filter(Boolean);
+  const list = savedWorkers.map(id => workers[id]).filter(Boolean);
 
-  if (!list.length) {
+  $("#emptySaved").classList.toggle("hidden", !!list.length);
 
-    document
-      .getElementById("emptySaved")
-      .classList.remove("hidden");
-
-    return;
-  }
-
-  document
-    .getElementById("emptySaved")
-    .classList.add("hidden");
-
-  list.forEach(worker => {
-
-    savedGrid.appendChild(
-      createWorkerCard(worker)
-    );
-
-  });
+  list.forEach((w, i) => grid.appendChild(createWorkerCard(w, 0, "", i)));
 }
 
 
 /* =========================================================
-   ACTIVITY
+   ACTIVITY + NOTIFICATIONS
    ========================================================= */
 
-function addActivity(
-  title,
-  description,
-  icon = "•"
-) {
+function addActivity(title, description, iconName = "check") {
 
   activity.unshift({
-
-    id: Date.now().toString(),
-
+    id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
     title,
     description,
-    icon,
-
-    createdAt:
-      new Date().toISOString()
-
+    icon: iconName,
+    createdAt: new Date().toISOString()
   });
 
-  activity =
-    activity.slice(0,30);
+  activity = activity.slice(0, 40);
+  save(STORAGE.activity, activity);
 
-  save(
-    STORAGE.activity,
-    activity
-  );
-
-  renderActivity();
-
+  if (currentView === "activity") renderActivity();
+  updateNotifDot();
 }
+
+const activityIcon = ic => (ICON_NAMES.has(ic) ? icon(ic) : esc(ic || "•"));
 
 function renderActivity() {
 
-  activityList.innerHTML = "";
+  const list = $("#activityList");
+  list.innerHTML = "";
 
-  if (!activity.length) {
+  $("#emptyActivity").classList.toggle("hidden", !!activity.length);
 
-    document
-      .getElementById("emptyActivity")
-      .classList.remove("hidden");
+  activity.forEach((item, i) => {
 
-    return;
-  }
-
-  document
-    .getElementById("emptyActivity")
-    .classList.add("hidden");
-
-  activity.forEach(item => {
-
-    const el =
-      document.createElement("div");
-
-    el.className =
-      "timeline-item";
-
-    const date =
-      new Date(
-        item.createdAt
-      );
+    const el = document.createElement("div");
+    el.className = "timeline-item";
+    el.style.setProperty("--i", Math.min(i, 12));
 
     el.innerHTML = `
-
-      <div class="timeline-icon">
-        ${item.icon}
-      </div>
-
+      <div class="timeline-icon">${activityIcon(item.icon)}</div>
       <div class="timeline-content">
+        <strong>${esc(item.title)}</strong>
+        <p>${esc(item.description)}</p>
+        <small>${timeAgo(item.createdAt)} · ${new Date(item.createdAt).toLocaleString()}</small>
+      </div>`;
 
-        <strong>${item.title}</strong>
-
-        <p>${item.description}</p>
-
-        <small>
-          ${date.toLocaleString()}
-        </small>
-
-      </div>
-
-    `;
-
-    activityList.appendChild(el);
-
+    list.appendChild(el);
   });
+}
+
+$("#clearActivity").addEventListener("click", () => {
+  if (!activity.length) return;
+  activity = [];
+  save(STORAGE.activity, activity);
+  renderActivity();
+  updateNotifDot();
+  toast("Activity cleared", { icon: "trash" });
+});
+
+const notifPanel = $("#notifPanel");
+
+function unreadCount() {
+  return activity.filter(a => new Date(a.createdAt).getTime() > notifSeen).length;
+}
+
+function updateNotifDot() {
+  $("#notifDot").classList.toggle("hidden", unreadCount() === 0);
+}
+
+function renderNotifPanel() {
+
+  const items = activity.slice(0, 6);
+
+  notifPanel.innerHTML = `
+    <div class="popover-head">
+      <strong>Notifications</strong>
+      <button class="text-btn" data-act="mark-read">Mark all read</button>
+    </div>
+    ${items.length ? items.map(a => `
+      <div class="popover-item ${new Date(a.createdAt).getTime() > notifSeen ? "unread" : ""}">
+        <div class="timeline-icon">${activityIcon(a.icon)}</div>
+        <div>
+          <strong>${esc(a.title)}</strong>
+          <p>${esc(a.description)}</p>
+          <small style="color:var(--muted-2);font-size:11.5px">${timeAgo(a.createdAt)}</small>
+        </div>
+      </div>`).join("") : `<div class="popover-empty">You're all caught up.</div>`}
+    <div class="popover-foot">
+      <button class="secondary-btn" data-act="view-activity">View all activity</button>
+    </div>`;
+}
+
+$("#notifButton").addEventListener("click", e => {
+  e.stopPropagation();
+  const opening = notifPanel.classList.contains("hidden");
+  if (opening) renderNotifPanel();
+  notifPanel.classList.toggle("hidden", !opening);
+});
+
+function markAllRead() {
+  notifSeen = Date.now();
+  save(STORAGE.seen, notifSeen);
+  updateNotifDot();
 }
 
 
@@ -1819,138 +2291,136 @@ function renderActivity() {
    POST JOB
    ========================================================= */
 
-document
-  .getElementById("postJobButton")
-  .addEventListener(
-    "click",
-    () => {
+function openJobModal(prefill = {}) {
 
-      document
-        .getElementById("jobModal")
-        .classList.remove("hidden");
+  closeAllModals();
 
-    }
-  );
+  $("#jobTitle").value = prefill.title || "";
+  $("#jobDescription").value = prefill.description || "";
+  $("#jobCategory").value = prefill.category || "home";
+  $("#jobBudget").value = "";
+  $("#jobArea").value = settings.city;
+  $("#jobUrgency").value = "Flexible";
 
-document
-  .getElementById("jobForm")
-  .addEventListener(
-    "submit",
-    event => {
+  openModal("jobModal");
+}
 
-      event.preventDefault();
+$("#postJobButton").addEventListener("click", () => openJobModal());
 
-      const job = {
+$("#jobForm").addEventListener("submit", event => {
 
-        id:
-          Date.now().toString(),
+  event.preventDefault();
 
-        title:
-          document.getElementById(
-            "jobTitle"
-          ).value,
+  const job = {
+    id: Date.now().toString(),
+    title: $("#jobTitle").value.trim(),
+    description: $("#jobDescription").value.trim(),
+    category: $("#jobCategory").value,
+    budget: $("#jobBudget").value.trim() || "Negotiable",
+    area: $("#jobArea").value.trim(),
+    urgency: $("#jobUrgency").value,
+    createdAt: new Date().toISOString()
+  };
 
-        description:
-          document.getElementById(
-            "jobDescription"
-          ).value,
+  postedJobs.unshift(job);
+  save(STORAGE.jobs, postedJobs);
 
-        category:
-          document.getElementById(
-            "jobCategory"
-          ).value,
+  addActivity("Job posted", `${job.title} was added to your jobs.`, "plus");
 
-        budget:
-          document.getElementById(
-            "jobBudget"
-          ).value || "Negotiable",
+  closeAllModals();
+  event.target.reset();
 
-        area:
-          document.getElementById(
-            "jobArea"
-          ).value,
+  showView("jobs");
+  toast("Job posted — nearby workers can see it now", { type: "success", icon: "check" });
+});
 
-        createdAt:
-          new Date().toISOString()
+function jobMatches(job) {
 
-      };
+  const text = `${job.title} ${job.description}`;
 
-      postedJobs.unshift(job);
-
-      save(
-        STORAGE.jobs,
-        postedJobs
-      );
-
-      addActivity(
-        "Job posted",
-        `${job.title} was added to your jobs.`,
-        "+"
-      );
-
-      closeModal("jobModal");
-
-      event.target.reset();
-
-      renderJobs();
-
-      showView("jobs");
-
-    }
-  );
+  return workerList
+    .filter(w => w.category === job.category)
+    .map(w => ({ w, s: scoreWorker(w, text).score }))
+    .sort((a, b) => b.s - a.s || b.w.rating - a.w.rating)
+    .slice(0, 3)
+    .map(x => x.w);
+}
 
 function renderJobs() {
 
-  postedJobsContainer.innerHTML = "";
+  const box = $("#postedJobs");
+  box.innerHTML = "";
 
   if (!postedJobs.length) {
-
-    postedJobsContainer.innerHTML = `
-
+    box.innerHTML = `
       <div class="empty-large">
-
-        <div class="empty-icon">
-          ＋
-        </div>
-
+        <div class="empty-icon">${icon("plus")}</div>
         <h3>No jobs posted</h3>
-
-        <p>
-          Post your first job and let nearby
-          workers discover it.
-        </p>
-
-      </div>
-    `;
-
+        <p>Post your first job and let nearby workers discover it.</p>
+      </div>`;
     return;
   }
 
   postedJobs.forEach(job => {
 
-    const el =
-      document.createElement("article");
+    const matches = jobMatches(job);
 
-    el.className =
-      "posted-job";
+    const el = document.createElement("article");
+    el.className = "posted-job";
 
     el.innerHTML = `
+      <div class="posted-job-head">
+        <div>
+          <h4>${esc(job.title)}</h4>
+          <p>${esc(job.description)}</p>
+        </div>
+        <button class="icon-only" data-act="delete-job" data-id="${job.id}" aria-label="Delete job">${icon("trash")}</button>
+      </div>
 
-      <h4>${job.title}</h4>
+      <div class="job-tags">
+        <span>${icon("pin")} ${esc(job.area)}</span>
+        <span>₹ ${esc(job.budget)}</span>
+        <span>${esc(CATEGORY_NAMES[job.category] || job.category)}</span>
+        ${job.urgency ? `<span>${icon("clock")} ${esc(job.urgency)}</span>` : ""}
+        <span>${timeAgo(job.createdAt)}</span>
+      </div>
 
-      <p>
-        ${job.description}
-      </p>
-
-      <p style="margin-top:8px;">
-        📍 ${job.area}
-        · 💰 ${job.budget}
-      </p>
-
+      ${matches.length ? `
+        <div class="job-matches">
+          <h5>WORKERS WHO CAN HELP</h5>
+          <div class="job-match-row">
+            ${matches.map(w => `
+              <button class="job-match" data-act="profile" data-id="${w.id}">
+                <div class="worker-avatar av-${w.category}">${w.initials}</div>
+                <div style="text-align:left"><b>${esc(w.name)}</b><small>★ ${w.rating} · from ${rupee(w.price)}</small></div>
+              </button>`).join("")}
+          </div>
+        </div>` : ""}
     `;
 
-    postedJobsContainer.appendChild(el);
+    box.appendChild(el);
+  });
+}
 
+function deleteJob(id) {
+
+  const idx = postedJobs.findIndex(j => j.id === id);
+  if (idx < 0) return;
+
+  const [job] = postedJobs.splice(idx, 1);
+  save(STORAGE.jobs, postedJobs);
+  renderJobs();
+
+  toast("Job deleted", {
+    icon: "trash",
+    action: {
+      label: "Undo",
+      fn: () => {
+        postedJobs.splice(idx, 0, job);
+        save(STORAGE.jobs, postedJobs);
+        renderJobs();
+      }
+    }
   });
 }
 
@@ -1959,24 +2429,18 @@ function renderJobs() {
    MESSAGES
    ========================================================= */
 
+let activeChat = null;
+let typingTimer = null;
+
 function getConversation(workerId) {
 
   if (!messages[workerId]) {
-
-    messages[workerId] = [
-
-      {
-        from: "worker",
-        text:
-          "Hi! Thanks for reaching out."
-      }
-
-    ];
-
-    save(
-      STORAGE.messages,
-      messages
-    );
+    messages[workerId] = [{
+      from: "worker",
+      text: `Hi! Thanks for reaching out. How can I help?`,
+      at: new Date().toISOString()
+    }];
+    save(STORAGE.messages, messages);
   }
 
   return messages[workerId];
@@ -1984,178 +2448,173 @@ function getConversation(workerId) {
 
 function renderConversations() {
 
-  const container =
-    document.getElementById(
-      "conversationList"
+  const q = ($("#convSearch").value || "").toLowerCase();
+
+  const items = workerList
+    .filter(w => !q || w.name.toLowerCase().includes(q) || w.role.toLowerCase().includes(q))
+    .map(w => ({ w, last: messages[w.id]?.slice(-1)[0] }))
+    .sort((a, b) =>
+      (b.last ? new Date(b.last.at || 0).getTime() : -1) -
+      (a.last ? new Date(a.last.at || 0).getTime() : -1)
     );
 
-  container.innerHTML = "";
-
-  Object.keys(workers)
-    .forEach(id => {
-
-      const worker =
-        workers[id];
-
-      const conversation =
-        messages[id];
-
-      const last =
-        conversation?.[
-          conversation.length - 1
-        ]?.text ||
-        "Start a conversation";
-
-      const el =
-        document.createElement("div");
-
-      el.className =
-        "conversation";
-
-      el.dataset.chatWorker =
-        id;
-
-      el.innerHTML = `
-
-        <div class="conversation-avatar">
-          ${worker.initials}
-        </div>
-
-        <div>
-
-          <strong>${worker.name}</strong>
-
-          <p>${last}</p>
-
-        </div>
-
-      `;
-
-      container.appendChild(el);
-
-    });
-
+  $("#conversationList").innerHTML = items.map(({ w, last }) => `
+    <div class="conversation ${activeChat === w.id ? "active" : ""} ${last ? "" : "new"}" data-act="chat" data-id="${w.id}">
+      <div class="conversation-avatar av-${w.category}">${w.initials}</div>
+      <div>
+        <strong>${esc(w.name)} <small>${last?.at ? clockTime(last.at) : ""}</small></strong>
+        <p>${last ? (last.from === "me" ? "You: " : "") + esc(last.text) : "Start a conversation"}</p>
+      </div>
+    </div>`).join("");
 }
 
-document.addEventListener(
-  "click",
-  event => {
+$("#convSearch").addEventListener("input", renderConversations);
 
-    const conversation =
-      event.target.closest(
-        "[data-chat-worker]"
-      );
+function bubbleHTML(m) {
+  return `${esc(m.text)}${m.at ? `<small>${clockTime(m.at)}</small>` : ""}`;
+}
 
-    if (!conversation) return;
-
-    openChat(
-      conversation.dataset.chatWorker
-    );
-
-  }
-);
+function appendBubble(m) {
+  const box = $("#chatMessages");
+  if (!box) return;
+  const el = document.createElement("div");
+  el.className = `message ${m.from === "me" ? "mine" : ""}`;
+  el.innerHTML = bubbleHTML(m);
+  const typing = $(".typing", box);
+  box.insertBefore(el, typing || null);
+  box.scrollTo({ top: box.scrollHeight, behavior: prefersReducedMotion ? "auto" : "smooth" });
+}
 
 function openChat(workerId) {
 
+  activeChat = workerId;
+
+  closeAllModals();
   showView("messages");
 
-  const worker =
-    workers[workerId];
+  const w = workers[workerId];
+  const conversation = getConversation(workerId);
 
-  const conversation =
-    getConversation(workerId);
+  $("#messagesLayout").classList.add("chat-open");
 
-  const panel =
-    document.getElementById(
-      "chatPanel"
-    );
-
-  panel.innerHTML = `
+  $("#chatPanel").innerHTML = `
 
     <div class="chat-header">
-
-      <div class="conversation-avatar">
-        ${worker.initials}
-      </div>
-
+      <button class="ghost-btn chat-back" data-act="chat-back" aria-label="Back">${icon("back")}</button>
+      <div class="conversation-avatar av-${w.category}">${w.initials}</div>
       <div>
-
-        <strong>${worker.name}</strong>
-
-        <span>
-          ${worker.available ? "Available" : "Busy"}
-        </span>
-
+        <strong>${esc(w.name)}</strong>
+        <span style="color:${w.available ? "var(--green)" : "var(--yellow)"}">${w.available ? "Available" : "Busy"} · ${esc(w.role)}</span>
       </div>
-
+      <div class="spacer"></div>
+      <button class="ghost-btn" data-act="profile" data-id="${w.id}" aria-label="View profile">${icon("user")}</button>
     </div>
 
     <div class="chat-messages" id="chatMessages">
+      ${conversation.map(m => `<div class="message ${m.from === "me" ? "mine" : ""}">${bubbleHTML(m)}</div>`).join("")}
+    </div>
 
-      ${conversation
-        .map(
-          message => `
-            <div class="
-              message
-              ${message.from === "me" ? "mine" : ""}
-            ">
-              ${message.text}
-            </div>
-          `
-        )
-        .join("")}
-
+    <div class="quick-replies">
+      <button data-act="quick-reply" data-text="Are you available today?">Available today?</button>
+      <button data-act="quick-reply" data-text="What is your price for this job?">What's the price?</button>
+      <button data-act="quick-reply" data-text="Could you visit this evening?">Visit this evening?</button>
     </div>
 
     <form class="chat-composer" id="chatForm">
-
-      <input
-        id="chatInput"
-        placeholder="Write a message..."
-        autocomplete="off"
-      >
-
-      <button>
-        ↑
-      </button>
-
+      <input id="chatInput" placeholder="Write a message..." autocomplete="off" aria-label="Message">
+      <button aria-label="Send">${icon("send")}</button>
     </form>
-
   `;
 
-  document
-    .getElementById("chatForm")
-    .addEventListener(
-      "submit",
-      event => {
+  const box = $("#chatMessages");
+  box.scrollTop = box.scrollHeight;
 
-        event.preventDefault();
+  $("#chatForm").addEventListener("submit", event => {
+    event.preventDefault();
+    const input = $("#chatInput");
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    sendMessage(workerId, text);
+  });
 
-        const input =
-          document.getElementById(
-            "chatInput"
-          );
+  renderConversations();
+}
 
-        const text =
-          input.value.trim();
+function sendMessage(workerId, text) {
 
-        if (!text) return;
+  const m = { from: "me", text, at: new Date().toISOString() };
 
-        messages[workerId].push({
-          from: "me",
-          text
-        });
+  getConversation(workerId).push(m);
+  save(STORAGE.messages, messages);
 
-        save(
-          STORAGE.messages,
-          messages
-        );
+  appendBubble(m);
+  renderConversations();
 
-        openChat(workerId);
+  scheduleReply(workerId, text);
+}
 
-      }
-    );
+function autoReply(w, text) {
 
+  const q = text.toLowerCase();
+
+  if (/price|cost|charge|rate|kitna|how much|fee/.test(q)) {
+    return `My visits start at ${rupee(w.price)}. The final price depends on the work — I can confirm once I see the problem.`;
+  }
+
+  if (/available|when|today|tomorrow|evening|morning|abhi|time|visit/.test(q)) {
+    return w.available
+      ? `Yes, I can come ${/evening/.test(q) ? "this evening" : "today"}. Please share your address and a good time.`
+      : `I'm busy right now, but I can fit you in later. ${w.availability}.`;
+  }
+
+  if (/address|location|where|area/.test(q)) {
+    return "Please send your area and a nearby landmark, and I'll check how soon I can reach you.";
+  }
+
+  if (/thank/.test(q)) return "Happy to help! 🙂";
+
+  return "Got it. Could you share a photo or a few more details so I can plan the visit properly?";
+}
+
+function scheduleReply(workerId, text) {
+
+  const w = workers[workerId];
+
+  const showTyping = activeChat === workerId && currentView === "messages";
+
+  if (showTyping) {
+    const box = $("#chatMessages");
+    if (box && !$(".typing", box)) {
+      const el = document.createElement("div");
+      el.className = "message typing";
+      el.innerHTML = "<i></i><i></i><i></i>";
+      box.appendChild(el);
+      box.scrollTo({ top: box.scrollHeight });
+    }
+  }
+
+  clearTimeout(typingTimer);
+
+  typingTimer = setTimeout(() => {
+
+    const reply = { from: "worker", text: autoReply(w, text), at: new Date().toISOString() };
+
+    messages[workerId].push(reply);
+    save(STORAGE.messages, messages);
+
+    $(".typing")?.remove();
+
+    if (activeChat === workerId && currentView === "messages") {
+      appendBubble(reply);
+    } else {
+      toast(`${w.name}: ${reply.text.slice(0, 60)}${reply.text.length > 60 ? "…" : ""}`, { icon: "chat" });
+      addActivity("New message", `${w.name} replied to you.`, "chat");
+    }
+
+    renderConversations();
+
+  }, 1100 + Math.random() * 900);
 }
 
 
@@ -2163,542 +2622,421 @@ function openChat(workerId) {
    PAYMENT
    ========================================================= */
 
-let paymentWorkerId = null;
+let payment = { id: null, tip: 0, upi: null };
 
-function openPayment(workerId) {
-
-  paymentWorkerId =
-    workerId;
-
-  document.getElementById(
-    "paymentAmount"
-  ).textContent =
-    `₹${workers[workerId].price}`;
-
-  document
-    .getElementById("paymentModal")
-    .classList.remove("hidden");
-
+function paymentBase(r) {
+  return (r.price ?? workers[r.workerId].price) + (r.fee || 0);
 }
 
-document
-  .getElementById("simulatePayment")
-  .addEventListener(
-    "click",
-    () => {
+function updatePaymentAmount() {
 
-      if (!paymentWorkerId)
-        return;
+  const r = requests.find(x => x.id === payment.id);
+  if (!r) return;
 
-      addActivity(
-        "Payment completed",
-        `Demo payment of ₹${workers[paymentWorkerId].price} recorded for ${workers[paymentWorkerId].name}.`,
-        "₹"
-      );
+  const base = paymentBase(r);
 
-      closeModal("paymentModal");
+  $("#paymentAmount").textContent = rupee(base + payment.tip);
 
-      alert(
-        "Demo payment completed successfully."
-      );
+  $("#paymentBreakdown").textContent =
+    `${r.service || "Service"} ${rupee(r.price ?? base)}` +
+    (r.fee ? ` + priority ${rupee(r.fee)}` : "") +
+    (payment.tip ? ` + tip ${rupee(payment.tip)}` : "");
+}
 
-    }
-  );
+function openPayment(id) {
+
+  const r = requests.find(x => x.id === id);
+  if (!r) return;
+
+  payment = { id, tip: 0, upi: null };
+
+  $("#paymentForm").classList.remove("hidden");
+  $("#paymentDone").classList.add("hidden");
+
+  $$("#tipOptions button").forEach(b => b.classList.toggle("active", b.dataset.tip === "0"));
+  $$("#upiOptions button").forEach(b => b.classList.remove("active"));
+
+  const btn = $("#simulatePayment");
+  btn.disabled = false;
+  btn.textContent = "Simulate payment";
+
+  updatePaymentAmount();
+  openModal("paymentModal");
+}
+
+$("#tipOptions").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  payment.tip = Number(b.dataset.tip);
+  $$("#tipOptions button").forEach(x => x.classList.toggle("active", x === b));
+  updatePaymentAmount();
+});
+
+$("#upiOptions").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  payment.upi = b.dataset.upi;
+  $$("#upiOptions button").forEach(x => x.classList.toggle("active", x === b));
+});
+
+$("#simulatePayment").addEventListener("click", () => {
+
+  const r = requests.find(x => x.id === payment.id);
+  if (!r) return;
+
+  if (!payment.upi) {
+    const box = $("#upiOptions");
+    box.classList.remove("shake");
+    void box.offsetWidth;
+    box.classList.add("shake");
+    toast("Choose a UPI app first", { type: "warn", icon: "shield" });
+    return;
+  }
+
+  const btn = $("#simulatePayment");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Processing…`;
+
+  setTimeout(() => {
+
+    const total = paymentBase(r) + payment.tip;
+    const w = workers[r.workerId];
+
+    r.paid = true;
+    r.tip = payment.tip;
+    r.receipt = "KS" + r.id.slice(-6);
+    save(STORAGE.requests, requests);
+
+    addActivity("Payment completed", `Demo payment of ${rupee(total)} via ${payment.upi} recorded for ${w.name}.`, "check");
+
+    $("#receiptText").textContent =
+      `${rupee(total)} paid to ${w.name} via ${payment.upi}. Receipt #${r.receipt}. (Demo only — no real money moved.)`;
+
+    $("#paymentForm").classList.add("hidden");
+    $("#paymentDone").classList.remove("hidden");
+
+    renderRequests(false);
+
+  }, 1500);
+});
 
 
 /* =========================================================
    REVIEW
    ========================================================= */
 
-function leaveReview(workerId) {
+let reviewRating = 0;
 
-  const worker =
-    workers[workerId];
-
-  const review =
-    prompt(
-      `Leave a review for ${worker.name}:`
-    );
-
-  if (!review?.trim())
-    return;
-
-  worker.reviews.unshift({
-
-    name: "You",
-
-    text:
-      review.trim()
-
-  });
-
-  addActivity(
-    "Review added",
-    `You reviewed ${worker.name}.`,
-    "★"
-  );
-
-  alert(
-    "Thanks! Your prototype review was added."
-  );
-
+function setStars(n) {
+  reviewRating = n;
+  $$("#starInput button").forEach(b => b.classList.toggle("on", Number(b.dataset.star) <= n));
 }
 
+function openReview(requestId) {
 
-/* =========================================================
-   FILTERS
-   ========================================================= */
+  const r = requests.find(x => x.id === requestId);
+  if (!r) return;
 
-document
-  .getElementById("filterButton")
-  .addEventListener(
-    "click",
-    () => {
+  const w = workers[r.workerId];
 
-      document
-        .getElementById("filtersPanel")
-        .classList.toggle("hidden");
+  $("#reviewRequestId").value = requestId;
+  $("#reviewTitle").textContent = `Review ${w.name}`;
+  $("#reviewText").value = "";
+  $$("#reviewTags button").forEach(b => b.classList.remove("on"));
+  setStars(0);
 
-    }
-  );
+  openModal("reviewModal");
+}
 
-document
-  .getElementById("categoryFilter")
-  .addEventListener(
-    "change",
-    renderWorkers
-  );
+$("#starInput").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b) setStars(Number(b.dataset.star));
+});
 
-document
-  .getElementById("sortFilter")
-  .addEventListener(
-    "change",
-    renderWorkers
-  );
+$("#reviewTags").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b) b.classList.toggle("on");
+});
 
-document
-  .getElementById("verifiedFilter")
-  .addEventListener(
-    "change",
-    renderWorkers
-  );
+$("#reviewForm").addEventListener("submit", event => {
 
-document
-  .getElementById("availableFilter")
-  .addEventListener(
-    "change",
-    renderWorkers
-  );
+  event.preventDefault();
 
+  if (!reviewRating) {
+    toast("Tap a star to rate first", { type: "warn", icon: "star" });
+    return;
+  }
 
-/* CATEGORY BUTTONS */
+  const r = requests.find(x => x.id === $("#reviewRequestId").value);
+  if (!r) return;
 
-document
-  .querySelectorAll(".category")
-  .forEach(button => {
+  const w = workers[r.workerId];
 
-    button.addEventListener(
-      "click",
-      () => {
+  const review = {
+    name: settings.name,
+    rating: reviewRating,
+    text: $("#reviewText").value.trim(),
+    tags: $$("#reviewTags button.on").map(b => b.textContent)
+  };
 
-        currentCategory =
-          button.dataset.category;
+  (reviewsStore[w.id] = reviewsStore[w.id] || []).unshift(review);
+  save(STORAGE.reviews, reviewsStore);
 
-        document
-          .querySelectorAll(".category")
-          .forEach(
-            item =>
-              item.classList.remove(
-                "active"
-              )
-          );
+  applyReview(w.id, review);
 
-        button.classList.add(
-          "active"
-        );
+  r.reviewed = true;
+  save(STORAGE.requests, requests);
 
-        document.getElementById(
-          "categoryFilter"
-        ).value =
-          currentCategory;
+  addActivity("Review added", `You rated ${w.name} ${reviewRating}★.`, "star");
 
-        renderWorkers();
-
-      }
-    );
-
-  });
-
-
-/* RESET FILTERS */
-
-document
-  .getElementById("resetFilters")
-  .addEventListener(
-    "click",
-    () => {
-
-      searchInput.value = "";
-
-      currentCategory =
-        "all";
-
-      document.getElementById(
-        "categoryFilter"
-      ).value = "all";
-
-      document.getElementById(
-        "sortFilter"
-      ).value = "recommended";
-
-      document.getElementById(
-        "verifiedFilter"
-      ).checked = false;
-
-      document.getElementById(
-        "availableFilter"
-      ).checked = false;
-
-      document
-        .querySelectorAll(".category")
-        .forEach(
-          item =>
-            item.classList.remove(
-              "active"
-            )
-        );
-
-      document
-        .querySelector('[data-category="all"]')
-        .classList.add("active");
-
-      renderWorkers();
-
-    }
-  );
-
-
-/* =========================================================
-   SEARCH EVENTS
-   ========================================================= */
-
-function performSearch() {
-
+  closeAllModals();
+  renderRequests(false);
   renderWorkers();
 
-  document
-    .querySelector(".workers-section")
-    .scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
+  toast("Thanks! Your review was added.", { type: "success", icon: "star" });
+});
 
+
+/* =========================================================
+   SETTINGS, LOCATION, LANGUAGE
+   ========================================================= */
+
+function applyProfile() {
+  $("#profileName").textContent = settings.name;
+  $("#profileAvatar").textContent = settings.name.trim().charAt(0).toUpperCase() || "B";
 }
 
-document
-  .getElementById("searchButton")
-  .addEventListener(
-    "click",
-    performSearch
-  );
+$("#profileSettings").addEventListener("click", () => {
+  $("#settingsName").value = settings.name;
+  applyTheme(document.documentElement.dataset.theme);
+  openModal("settingsModal");
+});
 
-searchInput.addEventListener(
-  "input",
-  () => {
+$("#themeSegment").addEventListener("click", e => {
+  const b = e.target.closest("[data-theme-opt]");
+  if (b) setTheme(b.dataset.themeOpt);
+});
 
-    document.getElementById(
-      "clearSearch"
-    ).style.display =
-      searchInput.value
-        ? "block"
-        : "none";
+$("#settingsForm").addEventListener("submit", event => {
+  event.preventDefault();
+  settings.name = $("#settingsName").value.trim() || DEFAULT_SETTINGS.name;
+  save(STORAGE.settings, settings);
+  applyProfile();
+  closeModal("settingsModal");
+  toast("Settings saved", { type: "success" });
+});
 
-    renderWorkers();
+$("#resetData").addEventListener("click", () => {
+  if (!confirm("This clears your requests, saved workers, jobs, messages and settings on this device. Continue?")) return;
+  Object.values(STORAGE).forEach(k => localStorage.removeItem(k));
+  location.reload();
+});
 
-  }
-);
+$("#locationButton").addEventListener("click", () => {
+  $("#locationOptions").innerHTML = Object.keys(CITIES).map(c =>
+    `<button data-act="city" data-city="${esc(c)}" class="${c === settings.city ? "active" : ""}">${icon("pin")} ${esc(c)}</button>`
+  ).join("");
+  openModal("locationModal");
+});
 
-searchInput.addEventListener(
-  "keydown",
-  event => {
+$("#languageButton").addEventListener("click", () => {
+  $$("[data-lang]").forEach(b => b.classList.toggle("active", b.dataset.lang === settings.lang));
+  openModal("languageModal");
+});
 
-    if (event.key === "Enter") {
-      performSearch();
+$$("[data-lang]").forEach(button => {
+  button.addEventListener("click", () => {
+
+    settings.lang = button.dataset.lang;
+    save(STORAGE.settings, settings);
+    applyLang();
+    closeModal("languageModal");
+
+    if (!I18N[settings.lang]) {
+      toast("This language is coming soon — showing English for now.", { icon: "chat" });
     }
-
-  }
-);
-
-document
-  .getElementById("clearSearch")
-  .addEventListener(
-    "click",
-    () => {
-
-      searchInput.value = "";
-
-      renderWorkers();
-
-    }
-  );
-
-
-/* QUICK SEARCH */
-
-document
-  .querySelectorAll(
-    "[data-search]"
-  )
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        searchInput.value =
-          button.dataset.search;
-
-        performSearch();
-
-      }
-    );
-
   });
+});
 
 
 /* =========================================================
-   MAP
-   ========================================================= */
-
-document
-  .querySelectorAll(".map-pin")
-  .forEach(pin => {
-
-    pin.addEventListener(
-      "click",
-      () => {
-
-        openProfile(
-          pin.dataset.worker
-        );
-
-      }
-    );
-
-  });
-
-document
-  .getElementById("zoomIn")
-  .addEventListener(
-    "click",
-    () => {
-
-      document.querySelector(
-        ".fake-map"
-      ).style.transform =
-        "scale(1.06)";
-
-    }
-  );
-
-document
-  .getElementById("zoomOut")
-  .addEventListener(
-    "click",
-    () => {
-
-      document.querySelector(
-        ".fake-map"
-      ).style.transform =
-        "scale(1)";
-
-    }
-  );
-
-document
-  .getElementById("centerMap")
-  .addEventListener(
-    "click",
-    () => {
-
-      document.querySelector(
-        ".user-location"
-      ).animate(
-        [
-          { transform:"scale(1)" },
-          { transform:"scale(1.4)" },
-          { transform:"scale(1)" }
-        ],
-        {
-          duration:600
-        }
-      );
-
-    }
-  );
-
-
-/* =========================================================
-   LANGUAGE
-   ========================================================= */
-
-document
-  .getElementById("languageButton")
-  .addEventListener(
-    "click",
-    () => {
-
-      document
-        .getElementById("languageModal")
-        .classList.remove("hidden");
-
-    }
-  );
-
-document
-  .querySelectorAll("[data-lang]")
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        document.getElementById(
-          "languageButton"
-        ).textContent =
-          button.dataset.lang;
-
-        closeModal(
-          "languageModal"
-        );
-
-      }
-    );
-
-  });
-
-
-/* =========================================================
-   NEW REQUEST
-   ========================================================= */
-
-document
-  .getElementById("newRequestButton")
-  .addEventListener(
-    "click",
-    () => {
-
-      showView("discover");
-
-      searchInput.focus();
-
-    }
-  );
-
-document
-  .getElementById("discoverFromRequests")
-  .addEventListener(
-    "click",
-    () => {
-
-      showView("discover");
-
-    }
-  );
-
-
-/* =========================================================
-   CLOSE MODALS
-   ========================================================= */
-
-document.addEventListener(
-  "click",
-  event => {
-
-    const closeButton =
-      event.target.closest(
-        "[data-close]"
-      );
-
-    if (closeButton) {
-
-      closeModal(
-        closeButton.dataset.close
-      );
-
-    }
-
-    if (
-      event.target.classList.contains(
-        "modal-backdrop"
-      )
-    ) {
-
-      event.target.classList.add(
-        "hidden"
-      );
-
-    }
-
-  }
-);
-
-function closeModal(id) {
-
-  const modal =
-    document.getElementById(id);
-
-  if (modal)
-    modal.classList.add("hidden");
-
-}
-
-
-/* =========================================================
-   BADGE
+   BADGES
    ========================================================= */
 
 function updateBadge() {
 
-  const active =
-    requests.filter(
-      request =>
-        request.status !==
-        "completed"
-    ).length;
+  const isActive = r => r.status !== "completed" && r.status !== "cancelled";
+  const active = requests.filter(isActive).length;
 
-  requestBadge.textContent =
-    active;
+  $("#requestBadge").textContent = active;
+  $("#tabAll").textContent = requests.length;
+  $("#tabActive").textContent = active;
+  $("#tabDone").textContent = requests.length - active;
 
+  const saved = $("#savedBadge");
+  saved.textContent = savedWorkers.length;
+  saved.classList.toggle("hidden", !savedWorkers.length);
 }
 
 
 /* =========================================================
-   PROFILE SETTINGS
+   GLOBAL EVENT DELEGATION
    ========================================================= */
 
-document
-  .getElementById("profileSettings")
-  .addEventListener(
-    "click",
-    () => {
+document.addEventListener("click", event => {
 
-      alert(
-        "Profile settings can be connected to a real account system later."
-      );
+  const el = event.target.closest("[data-act]");
 
+  // click-ripple on primary buttons
+  const rippleHost = event.target.closest(".primary-btn, .search-submit");
+  if (rippleHost && !prefersReducedMotion) {
+    const rect = rippleHost.getBoundingClientRect();
+    const dot = document.createElement("span");
+    dot.className = "ripple-dot";
+    dot.style.cssText =
+      `left:${event.clientX - rect.left}px;top:${event.clientY - rect.top}px;width:60px;height:60px;margin:-30px 0 0 -30px`;
+    rippleHost.appendChild(dot);
+    setTimeout(() => dot.remove(), 600);
+  }
+
+  // close popovers / dropdowns when clicking elsewhere
+  if (!event.target.closest("#notifWrap")) notifPanel.classList.add("hidden");
+  if (!event.target.closest(".search-wrap")) hideSuggestions();
+
+  // modal close buttons + backdrop
+  const closeBtn = event.target.closest("[data-close]");
+  if (closeBtn) closeModal(closeBtn.dataset.close);
+
+  if (event.target.classList.contains("modal-backdrop")) closeModal(event.target.id);
+
+  if (!el) return;
+
+  const id = el.dataset.id;
+
+  switch (el.dataset.act) {
+
+    case "save": toggleSave(id); break;
+    case "compare": toggleCompare(id); break;
+    case "profile": closeAllModals(); openProfile(id); break;
+    case "request": openRequestModal(id, el.dataset.service || 0); break;
+    case "chat": openChat(id); break;
+    case "chat-back": $("#messagesLayout").classList.remove("chat-open"); activeChat = null; renderConversations(); break;
+    case "quick-reply": sendMessage(activeChat, el.dataset.text); break;
+
+    case "advance": advanceRequest(id); break;
+    case "cancel": cancelRequest(id); break;
+    case "pay": openPayment(id); break;
+    case "review": openReview(id); break;
+
+    case "delete-job": deleteJob(id); break;
+
+    case "pin": selectPin(id); break;
+    case "close-popup": closePopup(); break;
+
+    case "quick": runQuery(el.dataset.q); break;
+    case "pick": searchInput.value = el.dataset.q; performSearch(); break;
+    case "clear-recent":
+      recentSearches = [];
+      save(STORAGE.recent, recentSearches);
+      renderRecent();
+      break;
+
+    case "mark-read": markAllRead(); renderNotifPanel(); break;
+    case "view-activity": markAllRead(); notifPanel.classList.add("hidden"); showView("activity"); break;
+
+    case "city":
+      settings.city = el.dataset.city;
+      save(STORAGE.settings, settings);
+      setCityAreas();
+      closeModal("locationModal");
+      toast(`Showing workers near ${settings.city}`, { icon: "pin" });
+      break;
+
+    case "share": {
+      const url = `${location.href.split("#")[0]}#${id}`;
+      (navigator.clipboard?.writeText(url) || Promise.reject())
+        .then(() => toast("Profile link copied", { type: "success", icon: "share" }))
+        .catch(() => toast(url, { icon: "share" }));
+      break;
     }
-  );
+  }
+});
+
+document.addEventListener("keydown", event => {
+
+  if (event.key === "Escape") {
+
+    const open = $$(".modal-backdrop:not(.hidden)").pop();
+
+    if (open) closeModal(open.id);
+    else if (!notifPanel.classList.contains("hidden")) notifPanel.classList.add("hidden");
+    else if (sidebar.classList.contains("open")) closeSidebar();
+    else if (selectedPin) closePopup();
+
+    return;
+  }
+
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName);
+
+  if (event.key === "/" && !typing) {
+    event.preventDefault();
+    if (currentView !== "discover") showView("discover");
+    searchInput.focus();
+  }
+});
+
+
+/* =========================================================
+   SCROLL REVEAL
+   ========================================================= */
+
+if ("IntersectionObserver" in window) {
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting) {
+        en.target.classList.add("in");
+        io.unobserve(en.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  $$(".reveal").forEach(el => io.observe(el));
+
+} else {
+  $$(".reveal").forEach(el => el.classList.add("in"));
+}
 
 
 /* =========================================================
    INITIAL LOAD
    ========================================================= */
 
-renderWorkers();
+applyTheme(document.documentElement.dataset.theme);
+applyProfile();
+setCityAreas();
+applyLang();
+
+renderStats();
+renderServiceTiles();
+renderRecent();
+renderWorkers({ skeleton: true });
 renderSaved();
 renderRequests();
 renderActivity();
 renderJobs();
 renderConversations();
+renderCompareBar();
 updateBadge();
+updateNotifDot();
+applyMap();
+
+// open a shared profile link (…/index.html#rohit)
+if (workers[location.hash.slice(1)]) {
+  setTimeout(() => openProfile(location.hash.slice(1)), 700);
+}
+
+// resume the "accepted" step for requests created just before a reload
+requests
+  .filter(r => r.status === "sent" && Date.now() - Number(r.id) < 20000)
+  .forEach(r => scheduleAutoAccept(r.id));
